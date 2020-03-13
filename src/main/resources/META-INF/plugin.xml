@@ -10,8 +10,6 @@
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="KotlinCodeSmellDetector" secondary="true" anchor="bottom"
                     factoryClass="org.jetbrains.research.kotlincodesmelldetector.ide.ui.RefactoringsToolWindowFactory"/>
-
-        <errorHandler implementation="org.jetbrains.research.kotlincodesmelldetector.reporting.GitHubErrorReporter"/>
     </extensions>
 
     <depends>org.jetbrains.kotlin</depends>

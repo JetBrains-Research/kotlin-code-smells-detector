@@ -42,13 +42,3 @@ intellij {
     downloadSources true
     intellij.updateSinceUntilBuild false
 }
-
-dependencies {
-    compile group: 'org.eclipse.mylyn.github', name: 'org.eclipse.egit.github.core', version: '2.1.5'
-}
-
-jar {
-    from {
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-    }
-}

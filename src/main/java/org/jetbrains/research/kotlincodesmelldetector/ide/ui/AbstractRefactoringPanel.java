@@ -47,7 +47,6 @@ import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.Refactorin
 import org.jetbrains.research.kotlincodesmelldetector.ide.ui.listeners.DoubleClickListener;
 import org.jetbrains.research.kotlincodesmelldetector.ide.ui.listeners.ElementSelectionListener;
 import org.jetbrains.research.kotlincodesmelldetector.ide.ui.listeners.EnterKeyListener;
-import org.jetbrains.research.kotlincodesmelldetector.utils.ExportResultsUtil;
 
 import javax.swing.*;
 import javax.swing.tree.TreePath;
@@ -225,18 +224,10 @@ public abstract class AbstractRefactoringPanel extends JPanel {
         buttonPanel.add(refreshButton);
 
         exportButton.setText(KotlinCodeSmellDetectorBundle.message("export"));
-        exportButton.addActionListener(l -> exportResults());
         buttonPanel.add(exportButton);
 
         panel.add(buttonPanel, BorderLayout.EAST);
         return panel;
-    }
-
-    private void exportResults() {
-        List<? extends Refactoring> refactorings = model.getCandidateRefactoringGroups().stream()
-                .flatMap(group -> group.getCandidates().stream())
-                .collect(Collectors.toList());
-        ExportResultsUtil.export(refactorings, this);
     }
 
     /**
