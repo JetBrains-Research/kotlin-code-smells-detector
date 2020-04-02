@@ -1,7 +1,10 @@
 package org.jetbrains.research.kotlincodesmelldetector.utils;
 
+import com.intellij.openapi.fileEditor.FileEditor;
+import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ProjectFileIndex;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.*;
 import org.apache.commons.lang.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
@@ -17,15 +20,15 @@ public class PsiUtils {
 
     private static final String FILE_TYPE_NAME = "Kotlin";
 
-    public static List<SmartPsiElementPointer<KtFile>> extractFiles(Project project) {
-        final List<SmartPsiElementPointer<KtFile>> ktFiles = new ArrayList<>();
+    public static List<KtFile> extractFiles(Project project) {
+        final List<KtFile> ktFiles = new ArrayList<>();
 
         ProjectFileIndex.SERVICE.getInstance(project).iterateContent(
                 file -> {
                     PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
                     if (psiFile != null && !psiFile.isDirectory()
                             && FILE_TYPE_NAME.equals(psiFile.getFileType().getName())) {
-                        ktFiles.add(toPointer((KtFile) psiFile));
+                        ktFiles.add((KtFile) psiFile);
                     }
                     return true;
                 }
@@ -34,7 +37,22 @@ public class PsiUtils {
         return ktFiles;
     }
 
-    public static List<SmartPsiElementPointer<KtClassOrObject>> extractClasses(@Nullable KtFile ktFile) {
+    public static KtFile getCurrentFileOpenInEditor(Project project) {
+        FileEditor currentEditor = FileEditorManager.getInstance(project).getSelectedEditor();
+        if (currentEditor != null) {
+            VirtualFile currentFile = currentEditor.getFile();
+            if (currentFile != null) {
+                PsiFile psiFile = PsiManager.getInstance(project).findFile(currentFile);
+                if (psiFile instanceof KtFile) {
+                    return (KtFile) psiFile;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public static List<KtClassOrObject> extractClasses(@Nullable KtFile ktFile) {
         if (ktFile == null) {
             return new ArrayList<>();
         }
@@ -42,7 +60,7 @@ public class PsiUtils {
         return ktFile.getDeclarations()
                 .stream()
                 .filter(ktDeclaration -> ktDeclaration instanceof KtClassOrObject)
-                .map(ktDeclaration -> toPointer((KtClassOrObject) ktDeclaration))
+                .map(ktDeclaration -> (KtClassOrObject) ktDeclaration)
                 .collect(Collectors.toList());
     }
 
