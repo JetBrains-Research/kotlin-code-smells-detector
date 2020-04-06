@@ -2,18 +2,13 @@ package org.jetbrains.research.kotlincodesmelldetector;
 
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.psi.SmartPsiElementPointer;
+import org.jetbrains.kotlin.name.FqName;
 import org.jetbrains.kotlin.psi.KtClassOrObject;
 import org.jetbrains.kotlin.psi.KtFile;
-import org.jetbrains.research.kotlincodesmelldetector.core.distance.ExtractClassCandidateGroup;
-import org.jetbrains.research.kotlincodesmelldetector.core.distance.ExtractClassCandidateRefactoring;
-import org.jetbrains.research.kotlincodesmelldetector.core.distance.GodClassDistanceMatrixKt;
-import org.jetbrains.research.kotlincodesmelldetector.core.distance.ProjectInfo;
+import org.jetbrains.research.kotlincodesmelldetector.core.distance.*;
 import org.jetbrains.research.kotlincodesmelldetector.utils.PsiUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.TreeSet;
+import java.util.*;
 
 public class KotlinCodeSmellFacade {
     public static TreeSet<ExtractClassCandidateGroup> getExtractClassRefactoringOpportunities(ProjectInfo project, ProgressIndicator indicator) {
@@ -38,5 +33,20 @@ public class KotlinCodeSmellFacade {
         }
 
         return new TreeSet<>(groupedBySourceClassMap.values());
+    }
+
+    public static List<MoveMethodCandidateRefactoring> getMoveMethodRefactoringOpportunities(ProjectInfo project, ProgressIndicator indicator) {
+        DistanceMatrix distanceMatrix = new DistanceMatrix(project);
+
+        Set<FqName> classNamesToBeExamined = new LinkedHashSet<>();
+        for (Map.Entry<FqName, ClassEntity> entry: distanceMatrix.getClasses().entrySet()) {
+            if (!entry.getValue().isEnum() && !entry.getValue().isInterface()) {
+                classNamesToBeExamined.add(entry.getKey());
+            }
+        }
+        List<MoveMethodCandidateRefactoring> moveMethodCandidateRefactorings =
+                distanceMatrix.getMoveMethodCandidateRefactoringsByAccess(classNamesToBeExamined, indicator);
+        Collections.sort(moveMethodCandidateRefactorings);
+        return moveMethodCandidateRefactorings;
     }
 }
