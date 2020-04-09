@@ -1,7 +1,6 @@
 package org.jetbrains.research.kotlincodesmelldetector.utils.math;
 
-import com.intellij.psi.SmartPsiElementPointer;
-import org.jetbrains.kotlin.psi.KtElement;
+import org.jetbrains.kotlin.psi.KtDeclaration;
 import org.jetbrains.research.kotlincodesmelldetector.utils.PsiUtils;
 
 import java.util.ArrayList;
@@ -19,9 +18,9 @@ public class Hierarchical extends Clustering {
         this.clusterSet = new HashSet<>();
     }
 
-    public HashSet<Cluster> clustering(List<? extends KtElement> entities) {
+    public HashSet<Cluster> clustering(List<? extends KtDeclaration> entities) {
         ArrayList<Cluster> clusters = new ArrayList<>();
-        for (KtElement entity : entities) {
+        for (KtDeclaration entity : entities) {
             Cluster cluster = new Cluster();
             cluster.addEntity(PsiUtils.toPointer(entity));
             clusters.add(cluster);

@@ -2,7 +2,7 @@ package org.jetbrains.research.kotlincodesmelldetector;
 
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.psi.SmartPsiElementPointer;
-import org.jetbrains.kotlin.psi.KtClassOrObject;
+import org.jetbrains.kotlin.psi.KtElement;
 import org.jetbrains.kotlin.psi.KtFile;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ExtractClassCandidateGroup;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ExtractClassCandidateRefactoring;
@@ -18,11 +18,11 @@ import java.util.TreeSet;
 public class KotlinCodeSmellFacade {
     public static TreeSet<ExtractClassCandidateGroup> getExtractClassRefactoringOpportunities(ProjectInfo project, ProgressIndicator indicator) {
         KtFile ktFile = PsiUtils.getCurrentFileOpenInEditor(project.getProject());
-        List<KtClassOrObject> ktClasses = PsiUtils.extractClasses(ktFile);
+        List<KtElement> ktClasses = PsiUtils.extractClasses(ktFile);
 
         List<ExtractClassCandidateRefactoring> extractClassCandidateList = new ArrayList<>(GodClassDistanceMatrixKt.getExtractClassCandidateRefactorings(project, ktClasses, indicator));
 
-        HashMap<SmartPsiElementPointer<KtClassOrObject>, ExtractClassCandidateGroup> groupedBySourceClassMap = new HashMap<>();
+        HashMap<SmartPsiElementPointer<KtElement>, ExtractClassCandidateGroup> groupedBySourceClassMap = new HashMap<>();
         for (ExtractClassCandidateRefactoring candidate : extractClassCandidateList) {
             if (groupedBySourceClassMap.containsKey(candidate.getSourceEntity())) {
                 groupedBySourceClassMap.get(candidate.getSourceEntity()).addCandidate(candidate);
@@ -33,7 +33,7 @@ public class KotlinCodeSmellFacade {
             }
         }
 
-        for (SmartPsiElementPointer<KtClassOrObject> sourceClass : groupedBySourceClassMap.keySet()) {
+        for (SmartPsiElementPointer<KtElement> sourceClass : groupedBySourceClassMap.keySet()) {
             groupedBySourceClassMap.get(sourceClass).groupConcepts();
         }
 

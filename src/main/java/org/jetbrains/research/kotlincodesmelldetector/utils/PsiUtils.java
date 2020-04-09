@@ -52,16 +52,18 @@ public class PsiUtils {
         return null;
     }
 
-    public static List<KtClassOrObject> extractClasses(@Nullable KtFile ktFile) {
+    public static List<KtElement> extractClasses(@Nullable KtFile ktFile) {
         if (ktFile == null) {
             return new ArrayList<>();
         }
 
-        return ktFile.getDeclarations()
+        List<KtElement> result = ktFile.getDeclarations()
                 .stream()
                 .filter(ktDeclaration -> ktDeclaration instanceof KtClassOrObject)
-                .map(ktDeclaration -> (KtClassOrObject) ktDeclaration)
+                .map(ktDeclaration -> (KtElement) ktDeclaration)
                 .collect(Collectors.toList());
+        result.add(ktFile);
+        return result;
     }
 
     public static boolean isChild(@NotNull KtElement parent, @NotNull KtElement child) {
@@ -134,11 +136,6 @@ public class PsiUtils {
     }
 
     public static String getHumanReadableName(@Nullable KtElement element) {
-        //TODO
-        return null;
-    }
-
-    public static KtFunction resolveMethod(KtCallExpression callExpression) {
         //TODO
         return null;
     }
