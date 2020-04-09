@@ -2,6 +2,8 @@ package org.jetbrains.research.kotlincodesmelldetector.utils
 
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiElementVisitor
+import com.intellij.psi.PsiMember
+import com.intellij.psi.PsiModifier
 import com.intellij.psi.SmartPointerManager
 import com.intellij.psi.SmartPsiElementPointer
 import org.jetbrains.kotlin.idea.references.mainReference
@@ -153,9 +155,23 @@ fun generateFullEntitySets(entities: List<KtElement>): Map<KtElement, Set<PsiEle
  * Checks access to the same object, meaning both `this.field` and `field` are ok
  */
 fun usedThroughThisReference(ktExpression: KtExpression): Boolean {
+    //TODO test
+    val resolvedElement = ktExpression.mainReference?.resolve() ?: return false
+    var resolvedParent = resolvedElement.parent
+    if (resolvedParent is KtProperty) {
+        resolvedParent = resolvedParent.parent
+    }
+
+    if (resolvedParent is KtFile
+        || resolvedParent is KtObjectDeclaration && resolvedParent.isCompanion()
+        || resolvedParent is PsiMember && resolvedParent.modifierList?.hasExplicitModifier(PsiModifier.STATIC) == true) {
+        return false
+    }
+
     val parent = ktExpression.parent
+
     return if (parent is KtDotQualifiedExpression) {
-        parent.selectorExpression is KtThisExpression
+        return parent.selectorExpression is KtThisExpression
     } else {
         true
     }
@@ -173,7 +189,7 @@ val KtDeclaration.referencesInBody: List<KtExpression>
             return result
         }
 
-        this.bodyExpression?.accept(object : PsiElementVisitor() {
+        val visitor = object : PsiElementVisitor() {
             override fun visitElement(element: PsiElement) {
                 if (element is KtCallExpression) {
                     result.add(element)
@@ -187,7 +203,15 @@ val KtDeclaration.referencesInBody: List<KtExpression>
                     visitElement(child)
                 }
             }
-        })
+        }
+
+        if (this is KtFunction) {
+            this.bodyExpression?.accept(visitor)
+        } else if (this is KtProperty) {
+            for (accessor in this.accessors) {
+                accessor.bodyExpression?.accept(visitor)
+            }
+        }
 
         return result
     }

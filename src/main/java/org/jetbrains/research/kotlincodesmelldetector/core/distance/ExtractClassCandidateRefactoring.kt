@@ -51,7 +51,7 @@ class ExtractClassCandidateRefactoring(
     var topics: List<String>
         private set
 
-    val extractedFunctions: Set<KtDeclaration>
+    val extractedMethods: Set<KtDeclaration>
         get() {
             val extractedFunctions: MutableSet<KtDeclaration> =
                 LinkedHashSet()
@@ -124,8 +124,8 @@ class ExtractClassCandidateRefactoring(
                 }
             }
 
-            return (extractedEntities.size > 2 && methodCounter != 0 && validRemainingMethodsInSourceClass()
-                && validRemainingFieldsInSourceClass() && !visualizationData.containsNonAccessedPropertyInExtractedClass)
+            return extractedEntities.size > 2 && methodCounter != 0 && validRemainingMethodsInSourceClass()
+                && validRemainingFieldsInSourceClass() && !visualizationData.containsNonAccessedPropertyInExtractedClass
         }
 
     private fun KtDeclaration.methodNotExtractable(): Boolean {
@@ -237,7 +237,7 @@ class ExtractClassCandidateRefactoring(
         topics = ArrayList()
 
         visualizationData = GodClassVisualizationData(
-            extractedFunctions, extractedFields
+            extractedMethods, extractedFields
         )
     }
 }

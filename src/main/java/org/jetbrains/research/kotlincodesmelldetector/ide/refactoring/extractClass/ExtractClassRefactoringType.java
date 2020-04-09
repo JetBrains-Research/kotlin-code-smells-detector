@@ -65,7 +65,7 @@ public class ExtractClassRefactoringType extends RefactoringType {
 
             boolean openInEditor = true; //open only first element
 
-            for (KtDeclaration method : refactoring.getExtractedFunctions()) {
+            for (KtDeclaration method : refactoring.getExtractedMethods()) {
                 AbstractRefactoringPanel.highlightMethod(method, new AnalysisScope(method.getProject()), openInEditor);
                 openInEditor = false;
             }
@@ -118,7 +118,7 @@ public class ExtractClassRefactoringType extends RefactoringType {
             this.refactoring = new ExtractClassRefactoring(extractClassCandidateRefactoring.getSourceFile(),
                     extractClassCandidateRefactoring.getSourceClass().getElement(),
                     extractClassCandidateRefactoring.getExtractedFields(),
-                    extractClassCandidateRefactoring.getExtractedFunctions(),
+                    extractClassCandidateRefactoring.getExtractedMethods(),
                     extractClassCandidateRefactoring.getDelegateFunctions(),
                     extractClassCandidateRefactoring.getDefaultTargetClassName());
         }

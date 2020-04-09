@@ -37,7 +37,7 @@ public class GodClassTreeTableModel extends AbstractTreeTableModel {
                 case 1:
                     return candidateRefactoring.getSourceEntity().getElement().getName();
                 case 2:
-                    return candidateRefactoring.getExtractedFields().size() + "/" + candidateRefactoring.getExtractedFunctions().size();
+                    return candidateRefactoring.getExtractedFields().size() + "/" + candidateRefactoring.getExtractedMethods().size();
             }
         }
 

@@ -1,16 +1,15 @@
 package org.jetbrains.research.kotlincodesmelldetector.utils
 
-import org.jetbrains.kotlin.idea.util.findAnnotation
-import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtDeclaration
 
-private fun KtDeclaration.hasAnnotation(fqName: String): Boolean {
-    return this.findAnnotation(FqName(fqName)) != null
+private fun KtDeclaration.hasAnnotation(shortName: String): Boolean {
+    return this.annotationEntries.any { annotation -> annotation.shortName?.asString() == shortName }
 }
 
 val KtDeclaration.isSynchronized: Boolean
     get() {
-        return this.hasAnnotation("Synchronized")
+        return hasAnnotation("Synchronized")
     }
 
 val KtDeclaration.isToString: Boolean
@@ -75,8 +74,7 @@ val KtDeclaration.containsFieldAccessOfEnclosingClass: Boolean
 
 val KtDeclaration.overridesMethod: Boolean
     get() {
-        //TODO
-        return false
+        return this.hasModifier(KtTokens.OVERRIDE_KEYWORD)
     }
 
 val KtDeclaration.containsSuperMethodInvocation: Boolean
