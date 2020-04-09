@@ -4,7 +4,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.SmartPsiElementPointer
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.research.kotlincodesmelldetector.utils.PsiUtils
+import org.jetbrains.research.kotlincodesmelldetector.utils.extractClasses
+import org.jetbrains.research.kotlincodesmelldetector.utils.extractFiles
 import org.jetbrains.research.kotlincodesmelldetector.utils.toPointer
 
 class ProjectInfo(val project: Project) {
@@ -12,12 +13,12 @@ class ProjectInfo(val project: Project) {
     val classes: List<SmartPsiElementPointer<KtElement>>
 
     init {
-        ktFiles = PsiUtils.extractFiles(project).map { file -> file.toPointer() }
+        ktFiles = extractFiles(project).map { file -> file.toPointer() }
 
         val classes = mutableListOf<SmartPsiElementPointer<KtElement>>()
         ktFiles.forEach { file ->
             classes.addAll(
-                PsiUtils.extractClasses(file.element).map { clazz -> clazz.toPointer() })
+                extractClasses(file.element).map { clazz -> clazz.toPointer() })
         }
         this.classes = classes
     }

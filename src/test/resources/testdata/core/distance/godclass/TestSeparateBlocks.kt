@@ -1,6 +1,4 @@
-package testdata.core.distance.godclass
-
-class Test {
+class TestSeparateBlocks {
     private val a = 1
     private val b = 1
     private val c = 1

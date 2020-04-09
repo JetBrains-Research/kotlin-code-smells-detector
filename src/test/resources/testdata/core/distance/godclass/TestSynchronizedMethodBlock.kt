@@ -1,6 +1,4 @@
-package ru.hse.godclass
-
-class testSeparateBlocks {
+class TestSynchronizedMethodBlock {
     private var a = 0
     private var b = 0
     private var c = 0

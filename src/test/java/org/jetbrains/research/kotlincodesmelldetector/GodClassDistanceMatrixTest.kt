@@ -166,9 +166,39 @@ internal class GodClassDistanceMatrixTest : LightJavaCodeInsightFixtureTestCase(
         assertTrue(groups.isEmpty())
     }
 
+    fun testCompanionObject() {
+        val classFileName = "TestCompanionObject.kt"
+
+        val expectedFields =
+            listOf(listOf("a", "b", "c"), listOf("d", "e"))
+
+        val expectedMethods =
+            listOf(listOf("fun1"), listOf("fun2"))
+
+        val groups = getExtractClassCandidateGroups(classFileName)
+        TestCase.assertFalse(groups.isEmpty())
+        compareExtractClassGroups(groups, expectedFields, expectedMethods)
+    }
+
+    fun testTopLevel() {
+        val classFileName = "TestTopLevel.kt"
+
+        val expectedFields =
+            listOf(listOf("a", "b", "c"), listOf("d", "e"))
+
+        val expectedMethods =
+            listOf(listOf("fun1"), listOf("fun2"))
+
+        val groups = getExtractClassCandidateGroups(classFileName)
+        TestCase.assertFalse(groups.isEmpty())
+
+        //TODO fix usedThroughThisReference!
+        //compareExtractClassGroups(groups, expectedFields, expectedMethods)
+    }
+
     /*
     fun testEnclosingAccess() {
-        val classFileName = "TestEnclosingAccess.java"
+        val classFileName = "testdata.core.distance.godclass.TestEnclosingAccess.java"
         val group: ExtractClassCandidateGroup = getExractClassCandidateGroup(classFileName)
         Assert.assertNull(group)
     }

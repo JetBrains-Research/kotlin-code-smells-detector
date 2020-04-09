@@ -1,5 +1,3 @@
-package ru.hse.godclass
-
 class Simple {
     private var totoa = 10
     private var totob = 10

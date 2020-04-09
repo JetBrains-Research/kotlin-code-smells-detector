@@ -1,12 +1,12 @@
 package org.jetbrains.research.kotlincodesmelldetector.utils.math;
 
 import org.jetbrains.kotlin.psi.KtDeclaration;
-import org.jetbrains.research.kotlincodesmelldetector.utils.PsiUtils;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
+import static org.jetbrains.research.kotlincodesmelldetector.utils.KtUtilsKt.toPointer;
 import static org.jetbrains.research.kotlincodesmelldetector.utils.math.DoubleArray.*;
 
 public class Hierarchical extends Clustering {
@@ -22,7 +22,7 @@ public class Hierarchical extends Clustering {
         ArrayList<Cluster> clusters = new ArrayList<>();
         for (KtDeclaration entity : entities) {
             Cluster cluster = new Cluster();
-            cluster.addEntity(PsiUtils.toPointer(entity));
+            cluster.addEntity(toPointer(entity));
             clusters.add(cluster);
         }
         while (clusters.size() > 2) {

@@ -1,5 +1,3 @@
-package ru.hse.godclass
-
 class TestEnclosingAccess {
     private var outerField = 0
 

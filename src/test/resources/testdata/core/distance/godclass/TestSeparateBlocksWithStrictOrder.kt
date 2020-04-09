@@ -1,6 +1,4 @@
-package ru.hse.godclass
-
-class testSeparateBlocksWithStrictOrder {
+class TestSeparateBlocksWithStrictOrder {
     private var aa = 0
     private var ab = 0
     private var ac = 0

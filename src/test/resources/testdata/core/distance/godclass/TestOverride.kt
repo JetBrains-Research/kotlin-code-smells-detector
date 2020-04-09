@@ -1,5 +1,3 @@
-package ru.hse.godclass
-
 class TestOverride : AnotherClass() {
     private var a = 0
     private var b = 0

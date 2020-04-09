@@ -8,17 +8,19 @@ import org.jetbrains.research.kotlincodesmelldetector.core.distance.ExtractClass
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ExtractClassCandidateRefactoring;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.GodClassDistanceMatrixKt;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ProjectInfo;
-import org.jetbrains.research.kotlincodesmelldetector.utils.PsiUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.TreeSet;
 
+import static org.jetbrains.research.kotlincodesmelldetector.utils.ExtractUtilsKt.extractClasses;
+import static org.jetbrains.research.kotlincodesmelldetector.utils.ExtractUtilsKt.getCurrentFileOpenInEditor;
+
 public class KotlinCodeSmellFacade {
     public static TreeSet<ExtractClassCandidateGroup> getExtractClassRefactoringOpportunities(ProjectInfo project, ProgressIndicator indicator) {
-        KtFile ktFile = PsiUtils.getCurrentFileOpenInEditor(project.getProject());
-        List<KtElement> ktClasses = PsiUtils.extractClasses(ktFile);
+        KtFile ktFile = getCurrentFileOpenInEditor(project.getProject());
+        List<KtElement> ktClasses = extractClasses(ktFile);
 
         List<ExtractClassCandidateRefactoring> extractClassCandidateList = new ArrayList<>(GodClassDistanceMatrixKt.getExtractClassCandidateRefactorings(project, ktClasses, indicator));
 

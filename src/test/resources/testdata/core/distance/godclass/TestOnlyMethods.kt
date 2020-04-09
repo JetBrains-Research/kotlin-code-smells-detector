@@ -1,6 +1,4 @@
-package ru.hse.godclass
-
-class testOnlyMethods {
+class TestOnlyMethods {
     fun fun1() {
         fun2()
         fun3()

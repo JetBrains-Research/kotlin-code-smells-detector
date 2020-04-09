@@ -1,5 +1,3 @@
-package ru.hse.godclass
-
 class TestPublicFields {
     var a = 0
     var b = 0

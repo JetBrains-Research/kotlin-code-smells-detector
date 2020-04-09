@@ -1,12 +1,11 @@
 package org.jetbrains.research.kotlincodesmelldetector.utils.math;
 
-import com.intellij.psi.PsiElement;
 import com.intellij.psi.SmartPsiElementPointer;
 import org.jetbrains.kotlin.psi.KtElement;
 
 import java.util.Objects;
 
-import static org.jetbrains.research.kotlincodesmelldetector.utils.PsiUtils.toPointer;
+import static org.jetbrains.research.kotlincodesmelldetector.utils.KtUtilsKt.toPointer;
 
 public class Node implements Comparable<Node> {
 

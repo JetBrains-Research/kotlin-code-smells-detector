@@ -61,15 +61,10 @@ val KtElement?.methods: List<KtDeclaration>
  */
 val KtElement?.fields: List<KtProperty>
     get() {
-        val result = this?.declarations
+
+        return this?.declarations
             ?.filter { ktDeclaration -> ktDeclaration is KtProperty && ktDeclaration.isField }
             ?.map { ktDeclaration -> ktDeclaration as KtProperty }?.toMutableList() ?: mutableListOf()
-
-        if (this is KtClassOrObject) {
-            this.companionObjects.forEach { companionObject -> result.addAll(companionObject.fields) }
-        }
-
-        return result
     }
 
 /**
@@ -113,8 +108,8 @@ fun generateFullEntitySets(entities: List<KtElement>): Map<KtElement, Set<PsiEle
         result[entity]?.add(entity)
     }
 
-    fun entityAccept(entity: KtElement, accessor: KtElement) {
-        accessor.accept(object : PsiElementVisitor() {
+    fun entityAccept(entity: KtElement, body: KtElement?) {
+        body?.accept(object : PsiElementVisitor() {
             override fun visitElement(psiElement: PsiElement) {
                 if (psiElement is KtCallExpression) {
                     val resolved = psiElement.mainReference.resolve()
@@ -140,10 +135,10 @@ fun generateFullEntitySets(entities: List<KtElement>): Map<KtElement, Set<PsiEle
 
     for (entity in entities) {
         if (entity is KtFunction) {
-            entityAccept(entity, entity)
+            entityAccept(entity, entity.bodyExpression)
         } else if (entity is KtProperty) {
             for (accessor in entity.accessors) {
-                entityAccept(entity, accessor)
+                entityAccept(entity, accessor.bodyExpression)
             }
         }
     }
