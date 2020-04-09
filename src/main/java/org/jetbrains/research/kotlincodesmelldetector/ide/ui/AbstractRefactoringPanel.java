@@ -24,8 +24,6 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.MessageType;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiField;
-import com.intellij.psi.PsiMethod;
 import com.intellij.psi.SmartPsiElementPointer;
 import com.intellij.psi.util.PsiModificationTracker;
 import com.intellij.ui.JBColor;
@@ -37,10 +35,11 @@ import com.intellij.ui.treeStructure.treetable.TreeTableTree;
 import com.intellij.util.messages.MessageBus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.kotlin.psi.KtClassOrObject;
+import org.jetbrains.kotlin.psi.KtDeclaration;
+import org.jetbrains.kotlin.psi.KtElement;
+import org.jetbrains.kotlin.psi.KtProperty;
 import org.jetbrains.research.kotlincodesmelldetector.KotlinCodeSmellDetectorBundle;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ProjectInfo;
-import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.Refactoring;
 import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.RefactoringType;
 import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.RefactoringType.AbstractCandidateRefactoring;
 import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.RefactoringType.AbstractRefactoring;
@@ -55,7 +54,6 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public abstract class AbstractRefactoringPanel extends JPanel {
     private static final NotificationGroup NOTIFICATION_GROUP =
@@ -110,7 +108,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
      */
     private static void runAfterCompilationCheck(ProjectInfo projectInfo, Task task) {
         ApplicationManager.getApplication().invokeLater(() -> {
-            List<SmartPsiElementPointer<KtClassOrObject>> classes = projectInfo.getClasses();
+            List<SmartPsiElementPointer<KtElement>> classes = projectInfo.getClasses();
 
             if (!classes.isEmpty()) {
                 VirtualFile[] virtualFiles = classes.stream()
@@ -339,7 +337,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
     /**
      * Opens definition of method and highlights specified element in the method.
      */
-    public static void highlightStatement(@Nullable PsiMethod sourceMethod,
+    public static void highlightStatement(@Nullable KtDeclaration sourceMethod,
                                           AnalysisScope scope,
                                           PsiElement statement,
                                           boolean openInEditor) {
@@ -359,12 +357,12 @@ public abstract class AbstractRefactoringPanel extends JPanel {
         }.queue();
     }
 
-    public static void highlightMethod(@Nullable PsiMethod sourceMethod,
+    public static void highlightMethod(@Nullable KtDeclaration sourceMethod,
                                        AnalysisScope scope, boolean openInEditor) {
         highlightStatement(sourceMethod, scope, sourceMethod, openInEditor);
     }
 
-    public static void highlightField(@Nullable PsiField sourceField, AnalysisScope scope, boolean openInEditor) {
+    public static void highlightProperty(@Nullable KtProperty ktProperty, AnalysisScope scope, boolean openInEditor) {
         new Task.Backgroundable(scope.getProject(), "Search Definition") {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
@@ -373,11 +371,11 @@ public abstract class AbstractRefactoringPanel extends JPanel {
 
             @Override
             public void onSuccess() {
-                if (sourceField == null || !sourceField.isValid()) {
+                if (ktProperty == null || !ktProperty.isValid()) {
                     return;
                 }
 
-                highlightPsiElement(sourceField, openInEditor);
+                highlightPsiElement(ktProperty, openInEditor);
             }
         }.queue();
     }
