@@ -7,6 +7,11 @@ import org.jetbrains.kotlin.psi.KtClassOrObject;
 import org.jetbrains.kotlin.psi.KtElement;
 import org.jetbrains.kotlin.psi.KtFile;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.*;
+import org.jetbrains.research.kotlincodesmelldetector.core.distance.ExtractClassCandidateGroup;
+import org.jetbrains.research.kotlincodesmelldetector.core.distance.ExtractClassCandidateRefactoring;
+import org.jetbrains.research.kotlincodesmelldetector.core.distance.GodClassDistanceMatrixKt;
+import org.jetbrains.research.kotlincodesmelldetector.core.distance.ProjectInfo;
+import org.jetbrains.research.kotlincodesmelldetector.core.longmethod.ASTSliceGroup;
 
 import java.util.*;
 
@@ -53,5 +58,8 @@ public class KotlinCodeSmellFacade {
                 distanceMatrix.getMoveMethodCandidateRefactoringsByAccess(classesToBeExamined, indicator);
         Collections.sort(moveMethodCandidateRefactorings);
         return moveMethodCandidateRefactorings;
+    // TODO implement
+    public static HashSet<ASTSliceGroup> getExtractMethodRefactoringOpportunities(ProjectInfo project, ProgressIndicator indicator) {
+        return new HashSet<>();
     }
 }

@@ -1,6 +1,8 @@
 package org.jetbrains.research.kotlincodesmelldetector.ide.ui;
 
 import com.intellij.analysis.AnalysisScope;
+import com.intellij.openapi.application.Application;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.TransactionGuard;
 import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
@@ -33,7 +35,9 @@ public class GodClassPanel extends AbstractRefactoringPanel {
     protected void doRefactor(AbstractCandidateRefactoring candidateRefactoring) {
         AbstractExtractClassRefactoring abstractRefactoring = (AbstractExtractClassRefactoring) getAbstractRefactoringFromAbstractCandidateRefactoring(candidateRefactoring);
 
-        TransactionGuard.getInstance().submitTransactionAndWait(() -> {
+        Project project = scope.getProject();
+
+        ApplicationManager.getApplication().invokeAndWait(() -> {
             removeHighlighters(project);
             GodClassUserInputDialog dialog = new GodClassUserInputDialog(abstractRefactoring.getRefactoring());
             dialog.show();
