@@ -2,8 +2,6 @@ package org.jetbrains.research.kotlincodesmelldetector.utils
 
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiElementVisitor
-import com.intellij.psi.PsiMember
-import com.intellij.psi.PsiModifier
 import com.intellij.psi.SmartPointerManager
 import com.intellij.psi.SmartPsiElementPointer
 import org.jetbrains.kotlin.idea.references.mainReference
@@ -11,33 +9,39 @@ import org.jetbrains.kotlin.nj2k.postProcessing.resolve
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.psi.KtDeclarationWithBody
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
+import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtThisExpression
-import org.jetbrains.kotlin.psi.psiUtil.isTopLevelKtOrJavaMember
+import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
 
 /**
  * If this is KtFile, returns all top-level functions and properties.
- * If this is KtClassOrObject, returns all declarations in class.
+ * If this is KtClassOrObject, returns all (top level) declarations in class, including val/var declared at primary constructor.
  * Otherwise, returns empty list.
  */
-val KtElement.declarations: List<KtDeclaration>
+val KtElement.declaredElements: List<KtDeclaration>
     get() {
-        if (this is KtClassOrObject) {
-            return this.declarations
-        } else if (this is KtFile) {
-            return this.declarations.filter { ktDeclaration -> ktDeclaration is KtFunction || ktDeclaration is KtProperty }
+        return when (this) {
+            is KtClassOrObject -> {
+                val result = this.declarations.toMutableList()
+                result.addAll(this.primaryConstructorParameters.filter { parameter -> parameter.isPropertyParameter() })
+                result
+            }
+            is KtFile -> {
+                this.declarations.filter { ktDeclaration -> ktDeclaration is KtFunction || ktDeclaration is KtProperty }
+            }
+            else -> {
+                listOf()
+            }
         }
-
-        return listOf()
     }
 
 /**
@@ -45,8 +49,8 @@ val KtElement.declarations: List<KtDeclaration>
  */
 val KtElement?.methods: List<KtDeclaration>
     get() {
-        val result = this?.declarations
-            ?.filter { ktDeclaration -> ktDeclaration is KtFunction || ktDeclaration is KtProperty && !ktDeclaration.isField }
+        val result = this?.declaredElements
+            ?.filter { ktDeclaration -> ktDeclaration.isMethod }
             ?.toMutableList()
             ?: mutableListOf()
 
@@ -60,12 +64,11 @@ val KtElement?.methods: List<KtDeclaration>
 /**
  * @see KtElement.isField
  */
-val KtElement?.fields: List<KtProperty>
+val KtElement?.fields: List<KtDeclaration>
     get() {
-
-        return this?.declarations
-            ?.filter { ktDeclaration -> ktDeclaration is KtProperty && ktDeclaration.isField }
-            ?.map { ktDeclaration -> ktDeclaration as KtProperty }?.toMutableList() ?: mutableListOf()
+        return this?.declaredElements
+            ?.filter { ktDeclaration -> ktDeclaration.isField }
+            ?: listOf()
     }
 
 /**
@@ -80,11 +83,15 @@ val KtElement.isMethod: Boolean
 
 /**
  * "field" is a KtProperty without overridden (non-trivial) getter and setter method, top-level if this is KtFile,
- * or the direct member of a class or object if this is a KtClassOrObject,
+ * or the direct member of a class or object if this is a KtClassOrObject (including primary constructor parameter),
  * or the direct member of one of the class companion objects
  */
 val KtElement.isField: Boolean
     get() {
+        if (this is KtParameter) {
+            return true
+        }
+
         if (this !is KtProperty) {
             return false
         }
@@ -96,6 +103,11 @@ val KtElement.isField: Boolean
         }
 
         return true
+    }
+
+val KtElement.isPropertyOrConstructorVar: Boolean
+    get() {
+        return this is KtProperty || this is KtParameter && this.isPropertyParameter()
     }
 
 fun <T : KtElement> T.toPointer(): SmartPsiElementPointer<T> {
@@ -121,7 +133,7 @@ fun generateFullEntitySets(entities: List<KtElement>): Map<KtElement, Set<PsiEle
                     }
                 } else if (psiElement is KtReferenceExpression) {
                     val resolved = psiElement.resolve()
-                    if (resolved is KtProperty) {
+                    if (resolved is KtElement && resolved.isPropertyOrConstructorVar) {
                         resolved.let { result[entity]?.add(it) }
                         result[resolved]?.add(entity)
                     }
@@ -198,7 +210,8 @@ val KtDeclaration.referencesInBody: List<KtExpression>
                 if (element is KtCallExpression) {
                     result.add(element)
                 } else if (element is KtReferenceExpression) {
-                    if (element.mainReference.resolve() is KtProperty) {
+                    val resolved = element.mainReference.resolve()
+                    if (resolved is KtElement && resolved.isPropertyOrConstructorVar) {
                         result.add(element)
                     }
                 }
@@ -218,15 +231,4 @@ val KtDeclaration.referencesInBody: List<KtExpression>
         }
 
         return result
-    }
-
-/**
- * Field consider to be static if defined inside companion object
- *
- * @see KtElement.isField
- */
-val KtProperty.isStatic: Boolean
-    get() {
-        val parent = this.parent
-        return parent is KtObjectDeclaration && parent.isCompanion()
     }

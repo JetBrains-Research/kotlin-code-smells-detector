@@ -13,13 +13,11 @@ import org.jetbrains.research.kotlincodesmelldetector.core.GodClassVisualization
 import org.jetbrains.research.kotlincodesmelldetector.utils.TopicFinder
 import org.jetbrains.research.kotlincodesmelldetector.utils.containsFieldAccessOfEnclosingClass
 import org.jetbrains.research.kotlincodesmelldetector.utils.containsSuperMethodInvocation
-import org.jetbrains.research.kotlincodesmelldetector.utils.declarations
-import org.jetbrains.research.kotlincodesmelldetector.utils.fields
+import org.jetbrains.research.kotlincodesmelldetector.utils.declaredElements
 import org.jetbrains.research.kotlincodesmelldetector.utils.isAbstract
 import org.jetbrains.research.kotlincodesmelldetector.utils.isDelegate
 import org.jetbrains.research.kotlincodesmelldetector.utils.isField
 import org.jetbrains.research.kotlincodesmelldetector.utils.isMethod
-import org.jetbrains.research.kotlincodesmelldetector.utils.isStatic
 import org.jetbrains.research.kotlincodesmelldetector.utils.isSynchronized
 import org.jetbrains.research.kotlincodesmelldetector.utils.methods
 import org.jetbrains.research.kotlincodesmelldetector.utils.overridesMethod
@@ -74,16 +72,16 @@ class ExtractClassCandidateRefactoring(
             return delegateFunctions
         }
 
-    val extractedFields: Set<KtProperty>
+    val extractedFields: Set<KtDeclaration>
         get() {
-            val extractedFieldFragmentMap: MutableMap<Int, KtProperty> =
+            val extractedFieldFragmentMap: MutableMap<Int, KtDeclaration> =
                 TreeMap()
 
-            val declarations = sourceClass.element?.declarations ?: mutableListOf()
+            val declarations = sourceClass.element?.declaredElements ?: mutableListOf()
             for (entity in extractedEntities) {
                 val element = entity.element
-                if (element is KtProperty && element.isField) {
-                    val index: Int = declarations.indexOf(element)
+                if (element?.isField == true) {
+                    val index = declarations.indexOf(element)
                     extractedFieldFragmentMap[index] = element
                 }
             }
@@ -96,7 +94,7 @@ class ExtractClassCandidateRefactoring(
             var methodCounter = 0
             for (entity in extractedEntities) {
                 val element = entity.element
-                if (element is KtProperty && element.isField) {
+                if (element?.isField == true) {
                     if (!element.hasPrivateModifier()) {
                         return false
                     }
@@ -118,7 +116,7 @@ class ExtractClassCandidateRefactoring(
             }
 
             return extractedEntities.size > 2 && methodCounter != 0 && validRemainingMethodsInSourceClass()
-                && validRemainingFieldsInSourceClass() && !visualizationData.containsNonAccessedPropertyInExtractedClass
+                && !visualizationData.containsNonAccessedPropertyInExtractedClass
         }
 
     private fun KtDeclaration.methodNotExtractable(): Boolean {
@@ -141,18 +139,6 @@ class ExtractClassCandidateRefactoring(
                     if (sourceMethod.sourceMethodValid()) {
                         return true
                     }
-                }
-            }
-        }
-
-        return false
-    }
-
-    private fun validRemainingFieldsInSourceClass(): Boolean {
-        for (sourceProperty in sourceClass.element.fields) {
-            if (extractedEntities.find { entity -> entity.element == sourceProperty } == null) {
-                if (!sourceProperty.isStatic) {
-                    return true
                 }
             }
         }

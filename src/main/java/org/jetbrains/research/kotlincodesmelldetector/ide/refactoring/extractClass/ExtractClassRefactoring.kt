@@ -9,7 +9,7 @@ import org.jetbrains.kotlin.psi.KtProperty
 class ExtractClassRefactoring(
     val sourceFile: KtFile,
     val sourceClass: KtElement,
-    val extractedFieldFragments: Set<KtProperty>,
+    val extractedFieldFragments: Set<KtDeclaration>,
     val extractedMethods: Set<KtDeclaration>,
     val delegateMethods: Set<KtDeclaration>,
     val defaultExtractedTypeName: String

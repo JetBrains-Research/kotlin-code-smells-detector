@@ -10,7 +10,7 @@ import org.jetbrains.research.kotlincodesmelldetector.utils.usedThroughThisRefer
 
 class GodClassVisualizationData(
     extractedMethods: Set<KtDeclaration>,
-    extractedFields: Set<KtProperty>
+    extractedFields: Set<KtDeclaration>
 ) : VisualizationData {
 
     override val distinctTargetDependencies: Int
@@ -63,7 +63,7 @@ class GodClassVisualizationData(
 
     private fun isAccessToExtractedProperty(
         access: KtExpression,
-        extractedProperties: Set<KtProperty>
+        extractedProperties: Set<KtDeclaration>
     ): Boolean {
         for (field in extractedProperties) {
             if (field == access.mainReference?.resolve()) {

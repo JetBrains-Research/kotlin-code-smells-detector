@@ -362,7 +362,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
         highlightStatement(sourceMethod, scope, sourceMethod, openInEditor);
     }
 
-    public static void highlightProperty(@Nullable KtProperty ktProperty, AnalysisScope scope, boolean openInEditor) {
+    public static void highlightProperty(@Nullable KtDeclaration field, AnalysisScope scope, boolean openInEditor) {
         new Task.Backgroundable(scope.getProject(), "Search Definition") {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
@@ -371,11 +371,11 @@ public abstract class AbstractRefactoringPanel extends JPanel {
 
             @Override
             public void onSuccess() {
-                if (ktProperty == null || !ktProperty.isValid()) {
+                if (field == null || !field.isValid()) {
                     return;
                 }
 
-                highlightPsiElement(ktProperty, openInEditor);
+                highlightPsiElement(field, openInEditor);
             }
         }.queue();
     }

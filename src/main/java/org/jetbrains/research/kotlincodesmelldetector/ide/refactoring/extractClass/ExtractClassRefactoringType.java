@@ -70,7 +70,7 @@ public class ExtractClassRefactoringType extends RefactoringType {
                 openInEditor = false;
             }
 
-            for (KtProperty field : refactoring.getExtractedFields()) {
+            for (KtDeclaration field : refactoring.getExtractedFields()) {
                 AbstractRefactoringPanel.highlightProperty(field, new AnalysisScope(field.getProject()), openInEditor);
                 openInEditor = false;
             }

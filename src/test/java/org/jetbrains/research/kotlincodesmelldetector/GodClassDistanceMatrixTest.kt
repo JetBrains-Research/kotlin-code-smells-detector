@@ -74,14 +74,12 @@ internal class GodClassDistanceMatrixTest : LightJavaCodeInsightFixtureTestCase(
         expectedMethods: List<String>
     ) {
         val extractedFieldsNames =
-            refactoring.extractedFields.stream().map { obj: KtProperty -> obj.name!! }
-                .collect(Collectors.toList())
+            refactoring.extractedFields.map { obj -> obj.name!! }
 
         TestCase.assertEquals(expectedFields, extractedFieldsNames)
 
         val extractedMethodsNames =
-            refactoring.extractedMethods.stream().map { obj: KtDeclaration -> obj.name!! }
-                .collect(Collectors.toList())
+            refactoring.extractedMethods.map { obj: KtDeclaration -> obj.name!! }
 
         TestCase.assertEquals(expectedMethods, extractedMethodsNames)
     }
@@ -205,6 +203,21 @@ internal class GodClassDistanceMatrixTest : LightJavaCodeInsightFixtureTestCase(
 
         val expectedMethods =
             listOf(listOf("property1"), listOf("property2"))
+
+        val groups = getExtractClassCandidateGroups(classFileName)
+        TestCase.assertFalse(groups.isEmpty())
+
+        compareExtractClassGroups(groups, expectedFields, expectedMethods)
+    }
+
+    fun testMainConstructorVals() {
+        val classFileName = "TestMainConstructorVals.kt"
+
+        val expectedFields =
+            listOf(listOf("a", "b", "c"), listOf("d", "e"))
+
+        val expectedMethods =
+            listOf(listOf("fun1"), listOf("fun2"))
 
         val groups = getExtractClassCandidateGroups(classFileName)
         TestCase.assertFalse(groups.isEmpty())
