@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtThisExpression
+import org.jetbrains.kotlin.psi.psiUtil.isTopLevelKtOrJavaMember
 
 /**
  * If this is KtFile, returns all top-level functions and properties.
@@ -152,25 +153,37 @@ fun generateFullEntitySets(entities: List<KtElement>): Map<KtElement, Set<PsiEle
 fun usedThroughThisReference(ktExpression: KtExpression): Boolean {
     //TODO test
     val resolvedElement = ktExpression.mainReference?.resolve() ?: return false
-    var resolvedParent = resolvedElement.parent
-    if (resolvedParent is KtProperty) {
-        resolvedParent = resolvedParent.parent
-    }
-
-    if (resolvedParent is KtFile
-        || resolvedParent is KtObjectDeclaration && resolvedParent.isCompanion()
-        || resolvedParent is PsiMember && resolvedParent.modifierList?.hasExplicitModifier(PsiModifier.STATIC) == true) {
+    if (resolvedElement !is KtElement || resolvedElement.classContext != ktExpression.classContext) {
         return false
     }
 
     val parent = ktExpression.parent
 
     return if (parent is KtDotQualifiedExpression) {
-        return parent.selectorExpression is KtThisExpression
+        parent.selectorExpression is KtThisExpression
     } else {
         true
     }
 }
+
+/**
+ * Returns a class entity to which this element belongs, i.e. first non-local surrounding KtClass, KtObject or KtFile
+ */
+val KtElement.classContext: KtElement?
+    get() {
+        var parentElement = this.parent
+        while (parentElement != null) {
+            if (parentElement is KtClassOrObject && !parentElement.isLocal) {
+                return parentElement
+            } else if (parentElement is KtFile) {
+                return parentElement
+            }
+
+            parentElement = parentElement.parent
+        }
+
+        return null
+    }
 
 /**
  * Returns list of KtExpression where each element is either KtCallExpression for function calls or

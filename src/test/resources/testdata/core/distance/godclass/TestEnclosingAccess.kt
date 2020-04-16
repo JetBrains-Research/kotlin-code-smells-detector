@@ -7,6 +7,7 @@ class TestEnclosingAccess {
         private var c = 0
         private var d = 0
         private var e = 0
+
         fun fun1() {
             a += 1
             b += 1

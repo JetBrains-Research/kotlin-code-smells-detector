@@ -3,6 +3,7 @@ package org.jetbrains.research.kotlincodesmelldetector
 import com.intellij.openapi.progress.util.ProgressIndicatorBase
 import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase
 import junit.framework.TestCase
+import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertTrue
 import org.jetbrains.kotlin.psi.KtDeclaration
@@ -27,6 +28,11 @@ internal class GodClassDistanceMatrixTest : LightJavaCodeInsightFixtureTestCase(
             KotlinCodeSmellFacade.getExtractClassRefactoringOpportunities(projectInfo, ProgressIndicatorBase())
 
         return set.toList()
+    }
+
+    private fun checkGroupsAreEmpty(classFileName: String) {
+        val groups = getExtractClassCandidateGroups(classFileName)
+        TestCase.assertTrue(groups.isEmpty())
     }
 
     private fun compareExtractClassGroups(
@@ -95,9 +101,7 @@ internal class GodClassDistanceMatrixTest : LightJavaCodeInsightFixtureTestCase(
     }
 
     fun testOnlyFields() {
-        val classFileName = "TestOnlyFields.kt"
-        val groups = getExtractClassCandidateGroups(classFileName)
-        TestCase.assertTrue(groups.isEmpty())
+        checkGroupsAreEmpty("TestOnlyFields.kt")
     }
 
     fun testManySeparatesBlocks() {
@@ -141,9 +145,7 @@ internal class GodClassDistanceMatrixTest : LightJavaCodeInsightFixtureTestCase(
     }
 
     fun testSynchronizedMethod() {
-        val classFileName = "TestSynchronizedMethod.kt"
-        val groups = getExtractClassCandidateGroups(classFileName)
-        assertTrue(groups.isEmpty())
+        checkGroupsAreEmpty("TestSynchronizedMethod.kt")
     }
 
     fun testSynchronizedMethodBody() {
@@ -155,15 +157,11 @@ internal class GodClassDistanceMatrixTest : LightJavaCodeInsightFixtureTestCase(
     }
 
     fun testPublicFields() {
-        val classFileName = "TestPublicFields.kt"
-        val groups = getExtractClassCandidateGroups(classFileName)
-        assertTrue(groups.isEmpty())
+        checkGroupsAreEmpty("TestPublicFields.kt")
     }
 
     fun testOverride() {
-        val classFileName = "TestOverride.kt"
-        val groups = getExtractClassCandidateGroups(classFileName)
-        assertTrue(groups.isEmpty())
+        checkGroupsAreEmpty("TestOverride.kt")
     }
 
     fun testCompanionObject() {
@@ -192,24 +190,40 @@ internal class GodClassDistanceMatrixTest : LightJavaCodeInsightFixtureTestCase(
         val groups = getExtractClassCandidateGroups(classFileName)
         TestCase.assertFalse(groups.isEmpty())
 
-        //TODO fix usedThroughThisReference!
-        //compareExtractClassGroups(groups, expectedFields, expectedMethods)
-    }
-
-    /*
-    fun testEnclosingAccess() {
-        val classFileName = "testdata.core.distance.godclass.TestEnclosingAccess.java"
-        val group: ExtractClassCandidateGroup = getExractClassCandidateGroup(classFileName)
-        Assert.assertNull(group)
+        compareExtractClassGroups(groups, expectedFields, expectedMethods)
     }
 
     fun testOnlyMethods() {
-        val classFileName = "TestOnlyMethods.java"
-        val group: ExtractClassCandidateGroup = getExractClassCandidateGroup(classFileName)
-        Assert.assertNull(group)
+        checkGroupsAreEmpty("TestOnlyMethods.kt")
     }
 
-    */
+    fun testProperties() {
+        val classFileName = "TestProperties.kt"
 
+        val expectedFields =
+            listOf(listOf("a", "b", "c"), listOf("d", "e"))
 
+        val expectedMethods =
+            listOf(listOf("property1"), listOf("property2"))
+
+        val groups = getExtractClassCandidateGroups(classFileName)
+        TestCase.assertFalse(groups.isEmpty())
+
+        compareExtractClassGroups(groups, expectedFields, expectedMethods)
+    }
+
+    fun testEnclosingAccess() {
+        //TODO
+        //checkGroupsAreEmpty("TestEnclosingAccess.kt")
+    }
+
+    fun testDelegate() {
+        //TODO
+        //checkGroupsAreEmpty("TestDelegate.kt")
+    }
+
+    fun testContainsSuperMethodInvocation() {
+        //TODO
+        //checkGroupsAreEmpty("TestContainsSuperMethodInvocation.kt")
+    }
 }

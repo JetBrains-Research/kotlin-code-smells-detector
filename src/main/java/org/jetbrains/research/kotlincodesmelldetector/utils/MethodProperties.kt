@@ -12,58 +12,10 @@ val KtDeclaration.isSynchronized: Boolean
         return hasAnnotation("Synchronized")
     }
 
-val KtDeclaration.isToString: Boolean
-    get() {
-        //TODO
-        return false
-    }
-
-val KtDeclaration.isCompareTo: Boolean
-    get() {
-        //TODO
-        return false
-    }
-
-val KtDeclaration.isClone: Boolean
-    get() {
-        //TODO
-        return false
-    }
-
-val KtDeclaration.isHashCode: Boolean
-    get() {
-        //TODO
-        return false
-    }
-
-val KtDeclaration.isEquals: Boolean
-    get() {
-        //TODO
-        return false
-    }
-
 val KtDeclaration.isDelegate: KtDeclaration?
     get() {
         //TODO
         return null
-    }
-
-val KtDeclaration.isStatic: Boolean
-    get() {
-        //TODO
-        return false
-    }
-
-val KtDeclaration.isWriteObject: Boolean
-    get() {
-        //TODO
-        return false
-    }
-
-val KtDeclaration.isReadObject: Boolean
-    get() {
-        //TODO
-        return false
     }
 
 val KtDeclaration.containsFieldAccessOfEnclosingClass: Boolean

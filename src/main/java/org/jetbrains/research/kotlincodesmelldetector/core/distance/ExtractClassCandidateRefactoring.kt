@@ -16,18 +16,11 @@ import org.jetbrains.research.kotlincodesmelldetector.utils.containsSuperMethodI
 import org.jetbrains.research.kotlincodesmelldetector.utils.declarations
 import org.jetbrains.research.kotlincodesmelldetector.utils.fields
 import org.jetbrains.research.kotlincodesmelldetector.utils.isAbstract
-import org.jetbrains.research.kotlincodesmelldetector.utils.isClone
-import org.jetbrains.research.kotlincodesmelldetector.utils.isCompareTo
 import org.jetbrains.research.kotlincodesmelldetector.utils.isDelegate
-import org.jetbrains.research.kotlincodesmelldetector.utils.isEquals
 import org.jetbrains.research.kotlincodesmelldetector.utils.isField
-import org.jetbrains.research.kotlincodesmelldetector.utils.isHashCode
 import org.jetbrains.research.kotlincodesmelldetector.utils.isMethod
-import org.jetbrains.research.kotlincodesmelldetector.utils.isReadObject
 import org.jetbrains.research.kotlincodesmelldetector.utils.isStatic
 import org.jetbrains.research.kotlincodesmelldetector.utils.isSynchronized
-import org.jetbrains.research.kotlincodesmelldetector.utils.isToString
-import org.jetbrains.research.kotlincodesmelldetector.utils.isWriteObject
 import org.jetbrains.research.kotlincodesmelldetector.utils.methods
 import org.jetbrains.research.kotlincodesmelldetector.utils.overridesMethod
 import java.util.ArrayList
@@ -130,15 +123,11 @@ class ExtractClassCandidateRefactoring(
 
     private fun KtDeclaration.methodNotExtractable(): Boolean {
         return this.isSynchronized || this.containsSuperMethodInvocation ||
-            this.overridesMethod || this.isAbstract || this.containsFieldAccessOfEnclosingClass ||
-            this.isReadObject || this.isWriteObject
+            this.overridesMethod || this.isAbstract || this.containsFieldAccessOfEnclosingClass
     }
 
     private fun KtDeclaration.sourceMethodValid(): Boolean {
-        return !this.isAbstract && !this.isStatic && this.isDelegate == null &&
-            !this.isReadObject && !this.isWriteObject && !this.isEquals
-            && !this.isHashCode && !this.isClone && !this.isCompareTo
-            && !this.isToString
+        return !this.isAbstract && this.isDelegate == null
     }
 
     private fun validRemainingMethodsInSourceClass(): Boolean {
