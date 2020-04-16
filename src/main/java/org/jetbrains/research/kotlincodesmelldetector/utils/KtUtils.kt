@@ -193,10 +193,6 @@ val KtDeclaration.referencesInBody: List<KtExpression>
     get() {
         val result = mutableListOf<KtExpression>()
 
-        if (this !is KtDeclarationWithBody) {
-            return result
-        }
-
         val visitor = object : PsiElementVisitor() {
             override fun visitElement(element: PsiElement) {
                 if (element is KtCallExpression) {
