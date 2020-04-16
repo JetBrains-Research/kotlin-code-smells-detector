@@ -1,8 +1,7 @@
 package org.jetbrains.research.kotlincodesmelldetector.ide.ui;
 
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiVariable;
 import com.intellij.ui.treeStructure.treetable.TreeTableModel;
+import org.jetbrains.kotlin.fir.declarations.FirVariable;
 import org.jetbrains.research.kotlincodesmelldetector.KotlinCodeSmellDetectorBundle;
 import org.jetbrains.research.kotlincodesmelldetector.core.longmethod.ASTSlice;
 import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.extractMethod.ExtractMethodCandidateGroup;
@@ -62,7 +61,7 @@ public class ExtractMethodTreeTableModel extends DefaultTreeModel implements Tre
     public Object getValueAt(Object o, int index) {
         if (o instanceof ASTSlice) {
             ASTSlice entry = (ASTSlice) o;
-            PsiVariable variable = entry.getLocalVariableCriterion();
+            FirVariable<?> variable = entry.getLocalVariableCriterion();
             if (index == 1) {
                 return variable == null ? "" : variable.getName();
             }
@@ -71,12 +70,13 @@ public class ExtractMethodTreeTableModel extends DefaultTreeModel implements Tre
             ExtractMethodCandidateGroup group = (ExtractMethodCandidateGroup) o;
             switch (index) {
                 case 0:
-                    PsiClass psiClass = group.getMethod().getContainingClass();
-                    String declaringClassName = psiClass == null ? "" : psiClass.getQualifiedName();
-                    String methodName = group.getMethod().getName();
-                    return declaringClassName + "::" + methodName;
+                    // TODO get name of containing class
+//                    PsiClass psiClass = group.getMethod().getContainingClass();
+//                    String declaringClassName = psiClass == null ? "" : psiClass.getQualifiedName();
+                    String methodName = group.getMethod().getName().asString();
+                    return "declaringClassName" + "::" + methodName;
                 case 1:
-                    PsiVariable firstCandidate = group.getCandidates().iterator().next().getLocalVariableCriterion();
+                    FirVariable<?> firstCandidate = group.getCandidates().iterator().next().getLocalVariableCriterion();
                     return firstCandidate == null ? "" : firstCandidate.getName();
                 default:
                     return "";

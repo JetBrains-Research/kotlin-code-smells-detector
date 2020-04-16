@@ -1,115 +1,102 @@
 package org.jetbrains.research.kotlincodesmelldetector.core.longmethod;
 
-import com.intellij.psi.*;
 import com.sun.istack.NotNull;
 import org.jetbrains.kotlin.fir.FirElement;
+import org.jetbrains.kotlin.fir.declarations.FirFunction;
+import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction;
+import org.jetbrains.kotlin.fir.declarations.FirVariable;
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.CFGNode;
-import org.jetbrains.kotlin.psi.KtFunction;
+import org.jetbrains.research.kotlincodesmelldetector.utils.FirUtilsKt;
 
-import java.util.*;
-
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 public class ASTSlice {
+    // @NotNull
+    //  private final FirClass<?> sourceTypeDeclaration;
     @NotNull
-    private SmartPsiElementPointer<PsiElement> sourceTypeDeclaration;
-    @NotNull
-    private SmartPsiElementPointer<PsiElement> sourceMethodDeclaration;
-    @NotNull
-    private SmartPsiElementPointer<PsiElement> psiFile;
-    @NotNull
-    private SmartPsiElementPointer<PsiElement> variableCriterionDeclarationStatement;
-    @NotNull
-    private SmartPsiElementPointer<PsiElement> extractedMethodInvocationInsertionStatement;
-    private SmartPsiElementPointer<PsiElement> localVariableCriterion;
-    private Set<PDGNode> sliceNodes;
-    private Set<SmartPsiElementPointer<PsiElement>> sliceStatements;
-    private Set<SmartPsiElementPointer<PsiElement>> removableStatements;
-    private Set<SmartPsiElementPointer<PsiElement>> duplicatedStatements;
-    private Set<SmartPsiElementPointer<PsiElement>> passedParameters;
+    private final FirSimpleFunction sourceMethodDeclaration;
+    private final Set<CFGNode<?>> sliceNodes;
+    private final Set<FirElement> sliceStatements;
+    private FirVariable<?> localVariableCriterion;
 
-    private String extractedMethodName;
-    private boolean declarationOfVariableCriterionBelongsToSliceNodes;
-    private boolean declarationOfVariableCriterionBelongsToRemovableNodes;
-    private BasicBlock boundaryBlock;
-    private boolean isObjectSlice;
-    private int methodSize;
-
-    // TODO no constructors here
-    private int depthOfNesting(PsiStatement statement) {
-        int depthOfNesting = 0;
-        PsiElement parent = statement;
-        while (!(parent instanceof PsiMethod)) {
-            depthOfNesting++;
-            parent = parent.getParent();
+    public ASTSlice(PDGSliceUnion sliceUnion) {
+        this.sourceMethodDeclaration = sliceUnion.getFunction();
+        // TODO add this later
+        // this.sourceTypeDeclaration = sourceMethodDeclaration.
+        this.sliceNodes = sliceUnion.getSliceNodes();
+        this.sliceStatements = new LinkedHashSet<>();
+        for (CFGNode<?> node : sliceNodes) {
+            sliceStatements.add(node.getFir());
         }
-        return depthOfNesting;
+
+        // TODO no accessed fields for now
+        // Set<PsiVariable> variableDeclarationsAndAccessedFields = sliceUnion.getVariableDeclarationsAndAccessedFieldsInMethod();
+        List<FirVariable<?>> variableDeclarationsInFunction = FirUtilsKt.getVariableDeclarationsInFunction(sliceUnion.getFunction());
+        FirVariable<?> criterion = sliceUnion.getLocalVariableCriterion();
+        for (FirVariable<?> variableDeclaration : variableDeclarationsInFunction) {
+            if (variableDeclaration.equals(criterion)) {
+                this.localVariableCriterion = variableDeclaration;
+                break;
+            }
+        }
+    }
+//
+//    public FirClass<?> getSourceTypeDeclaration() {
+//        return sourceTypeDeclaration;
+//    }
+
+    public FirSimpleFunction getSourceMethodDeclaration() {
+        return sourceMethodDeclaration;
     }
 
-    public PsiClass getSourceTypeDeclaration() {
-        return (PsiClass) sourceTypeDeclaration.getElement();
-    }
-
-    // TODO change it
-    public KtFunction getSourceMethodDeclarationKt() {
-        return (KtFunction) sourceMethodDeclaration.getElement();
-    }
-
-    public PsiMethod getSourceMethodDeclaration() {
-        return (PsiMethod) sourceMethodDeclaration.getElement();
-    }
-
-    public PsiVariable getLocalVariableCriterion() {
-        return (PsiVariable) localVariableCriterion.getElement();
-    }
-
-    public Set<SmartPsiElementPointer<PsiElement>> getPassedParameters() {
-        return passedParameters;
+    public FirVariable<?> getLocalVariableCriterion() {
+        return localVariableCriterion;
     }
 
     // TODO implement
-    public Set<CFGNode<? extends FirElement>> getCfgSliceNodes() {
-        return new HashSet<>();
-    }
-
-    public Set<PDGNode> getSliceNodes() {
+    public Set<CFGNode<? extends FirElement>> getSliceNodes() {
         return sliceNodes;
     }
 
-    public Set<SmartPsiElementPointer<PsiElement>> getSliceStatements() {
+    public Set<FirElement> getSliceStatements() {
         return sliceStatements;
     }
 
-    private Set<SmartPsiElementPointer<PsiElement>> getRemovableStatements() {
-        return removableStatements;
-    }
-
-    private PsiStatement getVariableCriterionDeclarationStatement() {
-        return variableCriterionDeclarationStatement == null ? null : (PsiStatement) variableCriterionDeclarationStatement.getElement();
-    }
-
-    private PsiStatement getExtractedMethodInvocationInsertionStatement() {
-        return (PsiStatement) extractedMethodInvocationInsertionStatement.getElement();
-    }
-
+    // TODO find a better way than calling toString on them?
     public String toString() {
-        return getSourceTypeDeclaration().getQualifiedName() + "::" +
-                getSourceMethodDeclaration().getName();
+//        return getSourceTypeDeclaration().toString() + "::" +
+//                getSourceMethodDeclaration().toString();
+        return getSourceMethodDeclaration().toString();
     }
 
-    /**
-     * Checks all {@link PsiStatement} from slice for availability.
-     *
-     * @return true if all {@link PsiStatement} are valid, false otherwise.
-     */
-    public boolean areSliceStatementsValid() {
-        for (SmartPsiElementPointer<PsiElement> psiElementSmartPsiElementPointer : this.getSliceStatements()) {
-            if (psiElementSmartPsiElementPointer.getElement() == null ||
-                    psiElementSmartPsiElementPointer.getElement() instanceof PsiStatement
-                            && !psiElementSmartPsiElementPointer.getElement().isValid()) {
-                return false;
-            }
-        }
+    // TODO make correct
+    public static boolean areSliceStatementsValid(ASTSlice astSlice) {
         return true;
     }
 
+    // TODO make correct
+    public static boolean areSliceStatementsValid() {
+        return true;
+    }
+
+
+
+    // TODO do we need the analog of it?
+    //    /**
+    //     * Checks all {@link PsiStatement} from slice for availability.
+    //     *
+    //     * @return true if all {@link PsiStatement} are valid, false otherwise.
+    //     */
+    //    public boolean areSliceStatementsValid() {
+    //        for (SmartPsiElementPointer<PsiElement> psiElementSmartPsiElementPointer : this.getSliceStatements()) {
+    //            if (psiElementSmartPsiElementPointer.getElement() == null ||
+    //                    psiElementSmartPsiElementPointer.getElement() instanceof PsiStatement
+    //                            && !psiElementSmartPsiElementPointer.getElement().isValid()) {
+    //                return false;
+    //            }
+    //        }
+    //        return true;
+    //    }
 }
