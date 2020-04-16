@@ -125,7 +125,7 @@ class ExtractClassCandidateRefactoring(
     }
 
     private fun KtDeclaration.sourceMethodValid(): Boolean {
-        return !this.isAbstract && this.isDelegate == null
+        return !this.isAbstract && !this.isDelegate
     }
 
     private fun validRemainingMethodsInSourceClass(): Boolean {

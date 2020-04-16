@@ -50,6 +50,7 @@ val KtElement?.methods: List<KtDeclaration>
     get() {
         val result = this?.declaredElements
             ?.filter { ktDeclaration -> ktDeclaration.isMethod }
+            ?.filter { ktDeclaration -> ktDeclaration.correctMethod }
             ?.toMutableList()
             ?: mutableListOf()
 
@@ -78,6 +79,18 @@ val KtElement?.fields: List<KtDeclaration>
 val KtElement.isMethod: Boolean
     get() {
         return this is KtFunction || this is KtProperty && !this.isField
+    }
+
+/**
+ * TODO
+ */
+private val KtDeclaration.correctMethod: Boolean
+    get() {
+        if (this.isDelegate) {
+            return false
+        }
+
+        return true
     }
 
 /**
@@ -163,17 +176,43 @@ fun generateFullEntitySets(entities: List<KtElement>): Map<KtElement, Set<PsiEle
  */
 fun usedThroughThisReference(ktExpression: KtExpression): Boolean {
     //TODO test
-    val resolvedElement = ktExpression.mainReference?.resolve() ?: return false
-    if (resolvedElement !is KtElement || resolvedElement.classContext != ktExpression.classContext) {
-        return false
-    }
+    val resolvedElement =
+        when (ktExpression) {
+            is KtCallExpression -> {
+                ktExpression.calleeExpression?.mainReference?.resolve() ?: return false
+            }
+            is KtReferenceExpression -> {
+                ktExpression.mainReference.resolve() ?: return false
+            }
+            else -> {
+                return false
+            }
+        }
 
-    val parent = ktExpression.parent
+    return when {
+        resolvedElement !is KtFunction && resolvedElement !is KtProperty && resolvedElement !is KtParameter -> {
+            false
+        }
 
-    return if (parent is KtDotQualifiedExpression) {
-        parent.selectorExpression is KtThisExpression
-    } else {
-        true
+        resolvedElement is KtFunction && resolvedElement.isLocal
+            || resolvedElement is KtProperty && resolvedElement.isLocal
+            || resolvedElement is KtParameter && !resolvedElement.hasValOrVar() -> {
+            false
+        }
+
+        resolvedElement !is KtElement || resolvedElement.classContext != ktExpression.classContext -> {
+            false
+        }
+
+        else -> {
+            val parent = ktExpression.parent
+
+            return if (parent is KtDotQualifiedExpression) {
+                parent.selectorExpression is KtThisExpression
+            } else {
+                true
+            }
+        }
     }
 }
 
