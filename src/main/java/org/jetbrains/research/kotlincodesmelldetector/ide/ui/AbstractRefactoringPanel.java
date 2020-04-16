@@ -7,9 +7,6 @@ import com.intellij.notification.NotificationDisplayType;
 import com.intellij.notification.NotificationGroup;
 import com.intellij.notification.Notifications;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.compiler.CompileScope;
-import com.intellij.openapi.compiler.CompileStatusNotification;
-import com.intellij.openapi.compiler.CompilerManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.colors.EditorColors;
 import com.intellij.openapi.editor.colors.EditorColorsManager;
@@ -22,9 +19,7 @@ import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.MessageType;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.SmartPsiElementPointer;
 import com.intellij.psi.util.PsiModificationTracker;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.ScrollPaneFactory;
@@ -36,8 +31,6 @@ import com.intellij.util.messages.MessageBus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.psi.KtDeclaration;
-import org.jetbrains.kotlin.psi.KtElement;
-import org.jetbrains.kotlin.psi.KtProperty;
 import org.jetbrains.research.kotlincodesmelldetector.KotlinCodeSmellDetectorBundle;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ProjectInfo;
 import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.RefactoringType;
@@ -108,8 +101,9 @@ public abstract class AbstractRefactoringPanel extends JPanel {
      */
     private static void runAfterCompilationCheck(ProjectInfo projectInfo, Task task) {
         //TODO compile check here
-        /*
         ApplicationManager.getApplication().invokeLater(() -> {
+            ProgressManager.getInstance().run(task);
+            /*
             List<SmartPsiElementPointer<KtElement>> classes = projectInfo.getClasses();
 
             if (!classes.isEmpty()) {
@@ -131,9 +125,9 @@ public abstract class AbstractRefactoringPanel extends JPanel {
             } else {
                 ProgressManager.getInstance().run(task);
             }
-        });
 
-         */
+             */
+        });
     }
 
     private void setupGUI() {
