@@ -107,6 +107,8 @@ public abstract class AbstractRefactoringPanel extends JPanel {
      * Compiles the project and runs the task only if there are no compilation errors.
      */
     private static void runAfterCompilationCheck(ProjectInfo projectInfo, Task task) {
+        //TODO compile check here
+        /*
         ApplicationManager.getApplication().invokeLater(() -> {
             List<SmartPsiElementPointer<KtElement>> classes = projectInfo.getClasses();
 
@@ -130,6 +132,8 @@ public abstract class AbstractRefactoringPanel extends JPanel {
                 ProgressManager.getInstance().run(task);
             }
         });
+
+         */
     }
 
     private void setupGUI() {
