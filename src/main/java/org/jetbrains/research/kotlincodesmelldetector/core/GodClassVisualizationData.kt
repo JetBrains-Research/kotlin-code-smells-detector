@@ -4,7 +4,6 @@ import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtExpression
-import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.research.kotlincodesmelldetector.utils.referencesInBody
 import org.jetbrains.research.kotlincodesmelldetector.utils.usedThroughThisReference
 
