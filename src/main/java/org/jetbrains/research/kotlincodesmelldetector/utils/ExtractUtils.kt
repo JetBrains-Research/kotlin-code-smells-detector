@@ -112,7 +112,7 @@ private fun getDirectoryWithRootPackageFor(file: KtFile): Optional<PsiDirectory>
     ArrayUtils.reverse(packageSequence)
     var directory = file.parent ?: throw IllegalStateException("File has no parent directory")
     for (packagePart in packageSequence) {
-        if (packagePart != directory?.name) {
+        if (packagePart != directory.name) {
             return Optional.empty()
         }
 
