@@ -1,10 +1,12 @@
 package org.jetbrains.research.kotlincodesmelldetector.ide.ui;
 
 import com.intellij.analysis.AnalysisScope;
+import com.intellij.ide.util.EditorHelper;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
+import com.intellij.psi.PsiElement;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.ScrollPaneFactory;
 import com.intellij.ui.TableSpeedSearch;
@@ -12,15 +14,19 @@ import com.intellij.ui.components.JBPanel;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.table.JBTable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.kotlin.psi.KtElement;
 import org.jetbrains.research.kotlincodesmelldetector.KotlinCodeSmellDetectorBundle;
 import org.jetbrains.research.kotlincodesmelldetector.KotlinCodeSmellFacade;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.MoveMethodCandidateRefactoring;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ProjectInfo;
 import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.moveMethod.MoveMethodRefactoring;
+import org.jetbrains.research.kotlincodesmelldetector.ide.ui.listeners.DoubleClickListener;
 
 import javax.swing.*;
 import javax.swing.table.TableColumn;
 import java.awt.*;
+import java.awt.event.InputEvent;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -61,6 +67,7 @@ class MoveMethodPanel extends JPanel {
         new TableSpeedSearch(table);
         table.setModel(model);
         model.setupRenderer(table);
+        table.addMouseListener((DoubleClickListener) this::onDoubleClick);
         table.getSelectionModel().setSelectionMode(SINGLE_SELECTION);
         table.setAutoCreateRowSorter(true);
         setupTableLayout();
@@ -122,8 +129,8 @@ class MoveMethodPanel extends JPanel {
                             .map(x ->
                                     new MoveMethodRefactoring(x.getSourceMethod(),
                                             x.getTargetClass().getElement(),
-                                            x.getIntersectionWithSourceClass(),
-                                            x.getIntersectionWithTargetClass()))
+                                            x.getDistinctSourceDependencies(),
+                                            x.getDistinctTargetDependencies()))
                             .collect(Collectors.toList());
                     refactorings.clear();
                     refactorings.addAll(new ArrayList<>(references));
@@ -147,6 +154,34 @@ class MoveMethodPanel extends JPanel {
         scrollPane.setVisible(true);
         scrollPane.setViewportView(refreshLabel);
         refreshButton.setEnabled(true);
+    }
+
+    private void onDoubleClick(InputEvent e) {
+        final int selectedRow = table.getSelectedRow() == -1 ? -1 : table.convertRowIndexToModel(table.getSelectedRow());
+        final int selectedColumn = table.getSelectedColumn();
+        if (selectedRow == -1 || selectedColumn == -1 || selectedColumn == SELECTION_COLUMN_INDEX) {
+            return;
+        }
+        openDefinition(model.getUnitAt(selectedRow, selectedColumn).orElse(null), scope);
+    }
+
+    private static void openDefinition(@Nullable KtElement unit, AnalysisScope scope) {
+        new Task.Backgroundable(scope.getProject(), "Search Definition") {
+            private PsiElement result;
+
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                indicator.setIndeterminate(true);
+                result = unit;
+            }
+
+            @Override
+            public void onSuccess() {
+                if (result != null) {
+                    EditorHelper.openInEditor(result);
+                }
+            }
+        }.queue();
     }
 }
 

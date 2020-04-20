@@ -2,11 +2,13 @@ package org.jetbrains.research.kotlincodesmelldetector.core.distance
 
 import org.jetbrains.kotlin.idea.caches.resolve.resolveToDescriptorIfAny
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.getDescriptorsFiltered
 
 data class ClassEntity(val element: KtClassOrObject) {
+    val fqName: FqName = element.fqName!!
     val isEnum = element is KtClass && element.isEnum()
     val isInterface = element is KtClass && element.isInterface()
     val attributeList: MutableList<KtNamedDeclaration> = mutableListOf()

@@ -5,21 +5,12 @@ import com.intellij.psi.PsiElementVisitor
 import com.intellij.psi.SmartPointerManager
 import com.intellij.psi.SmartPsiElementPointer
 import org.jetbrains.kotlin.idea.references.mainReference
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.nj2k.postProcessing.resolve
-import org.jetbrains.kotlin.psi.KtCallExpression
-import org.jetbrains.kotlin.psi.KtClassOrObject
-import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
-import org.jetbrains.kotlin.psi.KtElement
-import org.jetbrains.kotlin.psi.KtExpression
-import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtFunction
-import org.jetbrains.kotlin.psi.KtParameter
-import org.jetbrains.kotlin.psi.KtProperty
-import org.jetbrains.kotlin.psi.KtPropertyAccessor
-import org.jetbrains.kotlin.psi.KtReferenceExpression
-import org.jetbrains.kotlin.psi.KtThisExpression
+import org.jetbrains.kotlin.nj2k.postProcessing.type
+import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 
 /**
  * If this is KtFile, returns all top-level functions and properties.
@@ -270,3 +261,26 @@ val KtDeclaration.referencesInBody: List<KtExpression>
 
         return result
     }
+
+val KtNamedFunction.nameWithParameterList: FqName
+    get() {
+        return FqName(this.fqName.toString()
+                + this.valueParameters.map { "${it.name}: ${it.type()?.toString()}" }
+                .joinToString(", ", "(", ")"))
+    }
+
+fun isContainer(type: FqName): Boolean {
+    val acceptableOriginClassNames = listOf("kotlin.collections.Collection", "kotlin.collections.MutableCollection",
+            "kotlin.collections.AbstractCollection", "kotlin.collections.List", "kotlin.collections.MutableList",
+            "kotlin.collections.AbstractList", "kotlin.collections.ArrayList", "java.util.LinkedList",
+            "kotlin.collections.Set", "kotlin.collections.MutableSet", "java.util.AbstractSet", "java.util.HashSet",
+            "java.util.LinkedHashSet", "java.util.SortedSet", "java.util.TreeSet", "java.util.Vector", "java.util.Stack")
+    return type.toString() in acceptableOriginClassNames
+}
+fun getConstructorType(declaration: KtNamedDeclaration): FqName? {
+    return declaration.type()?.constructor?.declarationDescriptor?.fqNameOrNull()
+}
+
+fun getGenericType(declaration: KtNamedDeclaration): FqName? {
+    return declaration.type()?.arguments?.getOrNull(0)?.type?.constructor?.declarationDescriptor?.fqNameOrNull()
+}

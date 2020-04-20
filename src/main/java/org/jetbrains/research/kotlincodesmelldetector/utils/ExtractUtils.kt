@@ -80,17 +80,13 @@ fun isChild(parent: KtElement, child: KtElement): Boolean {
         && child.textRange.endOffset <= parent.textRange.endOffset
 }
 
-fun isTestClass(ktClass: KtClass): Boolean {
+fun isTestClass(ktClass: KtClassOrObject): Boolean {
     val file = ktClass.containingFile as KtFile
     return isInsideTestDirectory(file)
 }
 
 private fun isInsideTestDirectory(file: KtFile): Boolean {
-    val optionalDirectory = getDirectoryWithRootPackageFor(file)
-    if (!optionalDirectory.isPresent) {
-        return false
-    }
-    var directory: PsiDirectory? = optionalDirectory.get()
+    var directory: PsiDirectory? = getDirectoryWithRootPackageFor(file)
     while (directory != null) {
         val dirName = directory.name.toLowerCase()
         if (dirName == "test" || dirName == "tests") {
@@ -101,23 +97,16 @@ private fun isInsideTestDirectory(file: KtFile): Boolean {
     return false
 }
 
-private fun getDirectoryWithRootPackageFor(file: KtFile): Optional<PsiDirectory> {
+private fun getDirectoryWithRootPackageFor(file: KtFile): PsiDirectory? {
     val packageName = file.packageFqName.asString()
-    val packageSequence: Array<String?>
-    packageSequence = if ("" == packageName) {
-        arrayOfNulls(0)
-    } else {
-        packageName.split("\\.").toTypedArray()
-    }
-    ArrayUtils.reverse(packageSequence)
-    var directory = file.parent ?: throw IllegalStateException("File has no parent directory")
-    for (packagePart in packageSequence) {
+    val packageSequence = packageName.split(".")
+    var directory = file.containingDirectory ?: throw IllegalStateException("File has no parent directory")
+    for (packagePart in packageSequence.reversed()) {
         if (packagePart != directory.name) {
-            return Optional.empty()
+            return null
         }
-
-        directory = directory.parentDirectory ?: return Optional.empty()
+        directory = directory.parentDirectory ?: return null
     }
 
-    return Optional.of(directory)
+    return directory
 }

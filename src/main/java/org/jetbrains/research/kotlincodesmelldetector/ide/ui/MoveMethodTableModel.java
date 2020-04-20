@@ -4,6 +4,7 @@ import com.intellij.ui.BooleanTableCellRenderer;
 import com.intellij.ui.JBColor;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.psi.KtClassOrObject;
+import org.jetbrains.kotlin.psi.KtElement;
 import org.jetbrains.kotlin.psi.KtNamedFunction;
 import org.jetbrains.research.kotlincodesmelldetector.KotlinCodeSmellDetectorBundle;
 import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.moveMethod.MoveMethodRefactoring;
@@ -153,6 +154,17 @@ class MoveMethodTableModel extends AbstractTableModel {
                 return refactorings.get(rowIndex).getSourceAccessedMembers() + "/" + refactorings.get(rowIndex).getTargetAccessedMembers();
         }
         throw new IndexOutOfBoundsException("Unexpected column index: " + columnIndex);
+    }
+
+    Optional<? extends KtElement> getUnitAt(int virtualRow, int column) {
+        final int row = virtualRows.get(virtualRow);
+        switch (column) {
+            case ENTITY_COLUMN_INDEX:
+                return refactorings.get(row).getOptionalMethod();
+            case MOVE_TO_COLUMN_INDEX:
+                return refactorings.get(row).getOptionalTargetClass();
+        }
+        throw new IndexOutOfBoundsException("Unexpected column index: " + column);
     }
 
     void setupRenderer(JTable table) {

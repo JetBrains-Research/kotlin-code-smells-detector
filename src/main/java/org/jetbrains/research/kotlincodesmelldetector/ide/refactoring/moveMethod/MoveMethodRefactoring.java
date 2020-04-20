@@ -9,7 +9,7 @@ import org.jetbrains.kotlin.psi.KtClassOrObject;
 import org.jetbrains.kotlin.psi.KtNamedFunction;
 import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.Refactoring;
 
-import static org.jetbrains.research.kotlincodesmelldetector.core.distance.DistanceMatrixKt.getNameWithParameterList;
+import static org.jetbrains.research.kotlincodesmelldetector.utils.KtUtilsKt.getNameWithParameterList;
 
 import java.util.Optional;
 
