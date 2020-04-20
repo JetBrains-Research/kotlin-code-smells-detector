@@ -1,7 +1,6 @@
 package org.jetbrains.research.kotlincodesmelldetector.core.distance
 
 import com.intellij.psi.SmartPsiElementPointer
-import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.research.kotlincodesmelldetector.utils.TopicFinder
@@ -10,8 +9,7 @@ import java.util.HashSet
 import java.util.TreeSet
 
 class ExtractedConcept(
-    private val conceptEntities: Set<SmartPsiElementPointer<out KtElement>>,
-    private val sourceClass: SmartPsiElementPointer<KtClassOrObject>
+    private val conceptEntities: Set<SmartPsiElementPointer<out KtElement>>
 ) :
     Comparable<ExtractedConcept?> {
 

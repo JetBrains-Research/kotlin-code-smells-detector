@@ -4,8 +4,8 @@ import com.intellij.analysis.AnalysisScope;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.psi.SmartPsiElementPointer;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.kotlin.psi.KtClassOrObject;
-import org.jetbrains.kotlin.psi.KtFunction;
+import org.jetbrains.kotlin.psi.KtDeclaration;
+import org.jetbrains.kotlin.psi.KtElement;
 import org.jetbrains.kotlin.psi.KtProperty;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ExtractClassCandidateGroup;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ExtractClassCandidateRefactoring;
@@ -45,7 +45,7 @@ public class ExtractClassRefactoringType extends RefactoringType {
     }
 
     public static class AbstractExtractClassCandidateRefactoring extends AbstractCandidateRefactoring {
-        private final SmartPsiElementPointer<KtClassOrObject> sourceClass;
+        private final SmartPsiElementPointer<KtElement> sourceClass;
 
         public AbstractExtractClassCandidateRefactoring(ExtractClassCandidateRefactoring candidateRefactoring) {
             super(candidateRefactoring);
@@ -53,7 +53,7 @@ public class ExtractClassRefactoringType extends RefactoringType {
         }
 
         @Override
-        public KtClassOrObject getSourceClass() {
+        public KtElement getSourceClass() {
             return sourceClass.getElement();
         }
 
@@ -65,13 +65,13 @@ public class ExtractClassRefactoringType extends RefactoringType {
 
             boolean openInEditor = true; //open only first element
 
-            for (KtFunction function : refactoring.getExtractedFunctions()) {
-                AbstractRefactoringPanel.highlightFunction(function, new AnalysisScope(function.getProject()), openInEditor);
+            for (KtDeclaration method : refactoring.getExtractedMethods()) {
+                AbstractRefactoringPanel.highlightMethod(method, new AnalysisScope(method.getProject()), openInEditor);
                 openInEditor = false;
             }
 
-            for (KtProperty ktProperty : refactoring.getExtractedProperties()) {
-                AbstractRefactoringPanel.highlightProperty(ktProperty, new AnalysisScope(ktProperty.getProject()), openInEditor);
+            for (KtDeclaration field : refactoring.getExtractedFields()) {
+                AbstractRefactoringPanel.highlightProperty(field, new AnalysisScope(field.getProject()), openInEditor);
                 openInEditor = false;
             }
         }
@@ -117,8 +117,8 @@ public class ExtractClassRefactoringType extends RefactoringType {
         public AbstractExtractClassRefactoring(ExtractClassCandidateRefactoring extractClassCandidateRefactoring) {
             this.refactoring = new ExtractClassRefactoring(extractClassCandidateRefactoring.getSourceFile(),
                     extractClassCandidateRefactoring.getSourceClass().getElement(),
-                    extractClassCandidateRefactoring.getExtractedProperties(),
-                    extractClassCandidateRefactoring.getExtractedFunctions(),
+                    extractClassCandidateRefactoring.getExtractedFields(),
+                    extractClassCandidateRefactoring.getExtractedMethods(),
                     extractClassCandidateRefactoring.getDelegateFunctions(),
                     extractClassCandidateRefactoring.getDefaultTargetClassName());
         }

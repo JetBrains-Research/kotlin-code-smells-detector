@@ -1,9 +1,9 @@
 package org.jetbrains.research.kotlincodesmelldetector.core.distance
 
 import com.intellij.psi.SmartPsiElementPointer
-import org.jetbrains.kotlin.idea.refactoring.isAbstract
-import org.jetbrains.kotlin.lexer.KtModifierKeywordToken
+import org.jetbrains.kotlin.idea.util.hasPrivateModifier
 import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
@@ -11,21 +11,28 @@ import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.research.kotlincodesmelldetector.core.GodClassVisualizationData
 import org.jetbrains.research.kotlincodesmelldetector.utils.TopicFinder
-import org.jetbrains.research.kotlincodesmelldetector.utils.functions
-import org.jetbrains.research.kotlincodesmelldetector.utils.isUnused
-import org.jetbrains.research.kotlincodesmelldetector.utils.properties
+import org.jetbrains.research.kotlincodesmelldetector.utils.containsFieldAccessOfEnclosingClass
+import org.jetbrains.research.kotlincodesmelldetector.utils.containsSuperMethodInvocation
+import org.jetbrains.research.kotlincodesmelldetector.utils.declaredElements
+import org.jetbrains.research.kotlincodesmelldetector.utils.isAbstract
+import org.jetbrains.research.kotlincodesmelldetector.utils.isDelegate
+import org.jetbrains.research.kotlincodesmelldetector.utils.isField
+import org.jetbrains.research.kotlincodesmelldetector.utils.isMethod
+import org.jetbrains.research.kotlincodesmelldetector.utils.isSynchronized
+import org.jetbrains.research.kotlincodesmelldetector.utils.methods
+import org.jetbrains.research.kotlincodesmelldetector.utils.overridesMethod
 import java.util.ArrayList
 import java.util.LinkedHashMap
 import java.util.LinkedHashSet
 import java.util.TreeMap
 
 class ExtractClassCandidateRefactoring(
-    private val projectInfo: ProjectInfo,
-    val sourceClass: SmartPsiElementPointer<KtClassOrObject>,
-    val extractedEntities: List<SmartPsiElementPointer<out KtElement>>
+    projectInfo: ProjectInfo,
+    val sourceClass: SmartPsiElementPointer<KtElement>,
+    val extractedEntities: List<SmartPsiElementPointer<out KtDeclaration>>
 ) : CandidateRefactoring(), Comparable<ExtractClassCandidateRefactoring> {
 
-    private val leaveDelegate: Map<SmartPsiElementPointer<KtFunction>, Boolean>
+    private val leaveDelegate: Map<SmartPsiElementPointer<out KtDeclaration>, Boolean>
 
     var defaultTargetClassName: String
         private set
@@ -35,42 +42,47 @@ class ExtractClassCandidateRefactoring(
     var topics: List<String>
         private set
 
-    val extractedFunctions: Set<KtFunction>
+    val extractedMethods: Set<KtDeclaration>
         get() {
-            val extractedFunctions: MutableSet<KtFunction> =
+            val extractedFunctions: MutableSet<KtDeclaration> =
                 LinkedHashSet()
+
             for (entity in extractedEntities) {
-                if (entity.element is KtFunction) {
-                    extractedFunctions.add(entity.element as KtFunction)
+                val element = entity.element
+                if (element?.isMethod == true) {
+                    extractedFunctions.add(element)
                 }
             }
 
             return extractedFunctions
         }
 
-    val delegateFunctions: Set<KtFunction>
+    val delegateFunctions: Set<KtDeclaration>
         get() {
-            val delegateFunctions: MutableSet<KtFunction> =
+            val delegateFunctions: MutableSet<KtDeclaration> =
                 LinkedHashSet()
+
             for (method in leaveDelegate.keys) {
-                if (leaveDelegate[method] == true) {
-                    delegateFunctions.add(method.element!!)
+                val element = method.element
+                if (leaveDelegate[method] == true && element != null) {
+                    delegateFunctions.add(element)
                 }
             }
 
             return delegateFunctions
         }
 
-    val extractedProperties: Set<KtProperty>
+    val extractedFields: Set<KtDeclaration>
         get() {
-            val extractedFieldFragmentMap: MutableMap<Int, KtProperty> =
+            val extractedFieldFragmentMap: MutableMap<Int, KtDeclaration> =
                 TreeMap()
 
-            val declarations = sourceClass.element?.declarations ?: mutableListOf()
+            val declarations = sourceClass.element?.declaredElements ?: mutableListOf()
             for (entity in extractedEntities) {
-                if (entity.element is KtProperty) {
-                    val index: Int = declarations.indexOf(entity.element!!)
-                    extractedFieldFragmentMap[index] = entity.element as KtProperty
+                val element = entity.element
+                if (element?.isField == true) {
+                    val index = declarations.indexOf(element)
+                    extractedFieldFragmentMap[index] = element
                 }
             }
 
@@ -81,59 +93,53 @@ class ExtractClassCandidateRefactoring(
         get() {
             var methodCounter = 0
             for (entity in extractedEntities) {
-                if (entity.element is KtFunction) {
-                    val method = entity.element as KtFunction
-                    methodCounter++
-
-                    /*
-                    TODO review and realise relevant for Kotlin checks
-
-                    if (isSynchronized(method) || containsSuperMethodInvocation(method) ||
-                        overridesMethod(method) || method.isAbstract() || containsFieldAccessOfEnclosingClass(method) ||
-                        isReadObject(method) || isWriteObject(method)
-                    ) {
+                val element = entity.element
+                if (element?.isField == true) {
+                    if (!element.hasPrivateModifier()) {
                         return false
                     }
+                } else {
+                    methodCounter++
 
-                     */
-                } else if (entity.element is KtProperty) {
-                    val property = entity.element as KtProperty
-                    if (property.hasModifier(KtModifierKeywordToken.keywordModifier("private"))) {
-                        if (isUnused(property, sourceClass.element)) {
+                    if (element is KtProperty) {
+                        for (accessor in element.accessors) {
+                            if (accessor.methodNotExtractable()) {
+                                return false
+                            }
+                        }
+                    } else if (element is KtFunction) {
+                        if (element.methodNotExtractable()) {
                             return false
                         }
                     }
                 }
             }
 
-            return (extractedEntities.size > 2 && methodCounter != 0 && validRemainingMethodsInSourceClass()
-                && validRemainingFieldsInSourceClass() && !visualizationData.containsNonAccessedPropertyInExtractedClass)
+            return extractedEntities.size > 2 && methodCounter != 0 && validRemainingMethodsInSourceClass()
+                && !visualizationData.containsNonAccessedPropertyInExtractedClass
         }
 
-    private fun validRemainingMethodsInSourceClass(): Boolean {
-        for (sourceMethod in sourceClass.element.functions) {
-            if (extractedEntities.find { entity -> entity.element == sourceMethod } == null) {
-                if (!sourceMethod.isAbstract()
-                /*
-                TODO review and realise relevant for Kotlin checks here
-
-                !sourceMethod.isStatic && sourceMethod.isDelegate == null &&
-                !sourceMethod.isReadObject && !sourceMethod.isWriteObject && !sourceMethod.isEquals
-                && !sourceMethod.isHashCode && !sourceMethod.isClone && !sourceMethod.isCompareTo
-                && !sourceMethod.isToString
-                 */
-                ) {
-                    return true
-                }
-            }
-        }
-        return false
+    private fun KtDeclaration.methodNotExtractable(): Boolean {
+        return this.isSynchronized || this.containsSuperMethodInvocation ||
+            this.overridesMethod || this.isAbstract || this.containsFieldAccessOfEnclosingClass
     }
 
-    private fun validRemainingFieldsInSourceClass(): Boolean {
-        for (sourceProperty in sourceClass.element.properties) {
-            if (extractedEntities.find { entity -> entity.element == sourceProperty } == null) {
-                return true
+    private fun KtDeclaration.sourceMethodValid(): Boolean {
+        return !this.isAbstract && !this.isDelegate
+    }
+
+    private fun validRemainingMethodsInSourceClass(): Boolean {
+        for (sourceMethod in sourceClass.element.methods) {
+            if (extractedEntities.find { entity -> entity.element == sourceMethod } == null) {
+                if (sourceMethod is KtProperty) {
+                    if (sourceMethod.accessors.all { accessor -> accessor.sourceMethodValid() }) {
+                        return true
+                    }
+                } else if (sourceMethod is KtFunction) {
+                    if (sourceMethod.sourceMethodValid()) {
+                        return true
+                    }
+                }
             }
         }
 
@@ -144,7 +150,7 @@ class ExtractClassCandidateRefactoring(
         return null
     }
 
-    override fun getSource(): SmartPsiElementPointer<KtClassOrObject> {
+    override fun getSource(): SmartPsiElementPointer<KtElement> {
         return sourceClass
     }
 
@@ -187,7 +193,7 @@ class ExtractClassCandidateRefactoring(
         return visualizationData.distinctTargetDependencies
     }
 
-    override fun getSourceEntity(): SmartPsiElementPointer<KtClassOrObject> {
+    override fun getSourceEntity(): SmartPsiElementPointer<KtElement> {
         return sourceClass
     }
 
@@ -204,22 +210,9 @@ class ExtractClassCandidateRefactoring(
             }
         }
         topics = ArrayList()
-        val extractedFunctions: MutableSet<SmartPsiElementPointer<out KtFunction>> =
-            LinkedHashSet()
-        val extractedProperties: MutableSet<SmartPsiElementPointer<out KtProperty>> =
-            LinkedHashSet()
-
-        for (entity in extractedEntities) {
-            if (entity.element is KtFunction) {
-                extractedFunctions.add(entity as SmartPsiElementPointer<out KtFunction>)
-            } else if (entity.element is KtProperty) {
-                extractedProperties.add(entity as SmartPsiElementPointer<out KtProperty>)
-            }
-        }
 
         visualizationData = GodClassVisualizationData(
-            sourceClass,
-            this.extractedFunctions, this.extractedProperties
+            extractedMethods, extractedFields
         )
     }
 }

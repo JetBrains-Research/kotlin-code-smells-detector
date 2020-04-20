@@ -35,8 +35,8 @@ import com.intellij.ui.treeStructure.treetable.TreeTableTree;
 import com.intellij.util.messages.MessageBus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.kotlin.psi.KtClassOrObject;
-import org.jetbrains.kotlin.psi.KtFunction;
+import org.jetbrains.kotlin.psi.KtDeclaration;
+import org.jetbrains.kotlin.psi.KtElement;
 import org.jetbrains.kotlin.psi.KtProperty;
 import org.jetbrains.research.kotlincodesmelldetector.KotlinCodeSmellDetectorBundle;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ProjectInfo;
@@ -108,7 +108,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
      */
     private static void runAfterCompilationCheck(ProjectInfo projectInfo, Task task) {
         ApplicationManager.getApplication().invokeLater(() -> {
-            List<SmartPsiElementPointer<KtClassOrObject>> classes = projectInfo.getClasses();
+            List<SmartPsiElementPointer<KtElement>> classes = projectInfo.getClasses();
 
             if (!classes.isEmpty()) {
                 VirtualFile[] virtualFiles = classes.stream()
@@ -337,7 +337,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
     /**
      * Opens definition of method and highlights specified element in the method.
      */
-    public static void highlightStatement(@Nullable KtFunction sourceMethod,
+    public static void highlightStatement(@Nullable KtDeclaration sourceMethod,
                                           AnalysisScope scope,
                                           PsiElement statement,
                                           boolean openInEditor) {
@@ -357,12 +357,12 @@ public abstract class AbstractRefactoringPanel extends JPanel {
         }.queue();
     }
 
-    public static void highlightFunction(@Nullable KtFunction sourceFunction,
-                                         AnalysisScope scope, boolean openInEditor) {
-        highlightStatement(sourceFunction, scope, sourceFunction, openInEditor);
+    public static void highlightMethod(@Nullable KtDeclaration sourceMethod,
+                                       AnalysisScope scope, boolean openInEditor) {
+        highlightStatement(sourceMethod, scope, sourceMethod, openInEditor);
     }
 
-    public static void highlightProperty(@Nullable KtProperty ktProperty, AnalysisScope scope, boolean openInEditor) {
+    public static void highlightProperty(@Nullable KtDeclaration field, AnalysisScope scope, boolean openInEditor) {
         new Task.Backgroundable(scope.getProject(), "Search Definition") {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
@@ -371,11 +371,11 @@ public abstract class AbstractRefactoringPanel extends JPanel {
 
             @Override
             public void onSuccess() {
-                if (ktProperty == null || !ktProperty.isValid()) {
+                if (field == null || !field.isValid()) {
                     return;
                 }
 
-                highlightPsiElement(ktProperty, openInEditor);
+                highlightPsiElement(field, openInEditor);
             }
         }.queue();
     }

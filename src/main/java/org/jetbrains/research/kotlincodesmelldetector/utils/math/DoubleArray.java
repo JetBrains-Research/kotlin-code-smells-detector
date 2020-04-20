@@ -149,7 +149,6 @@ public class DoubleArray {
      * @return The reduced matrix.
      */
     public static double[][] deleteColumns(double[][] x, int... J) {
-        // TODO improve efficiency here
         return transpose(deleteRows(transpose(x), J));
     }
 

@@ -1,7 +1,7 @@
 package org.jetbrains.research.kotlincodesmelldetector.utils.math;
 
 
-import org.jetbrains.kotlin.psi.KtElement;
+import org.jetbrains.kotlin.psi.KtDeclaration;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -19,5 +19,5 @@ public abstract class Clustering {
         return null;
     }
 
-    public abstract HashSet<Cluster> clustering(List<? extends KtElement> entities);
+    public abstract HashSet<Cluster> clustering(List<? extends KtDeclaration> entities);
 }

@@ -1,13 +1,14 @@
 package org.jetbrains.research.kotlincodesmelldetector.core.distance
 
 import com.intellij.psi.SmartPsiElementPointer
-import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtElement
 import java.util.ArrayList
 import java.util.HashSet
 import java.util.LinkedHashSet
 import java.util.TreeSet
 
-class ExtractClassCandidateGroup(val source: SmartPsiElementPointer<KtClassOrObject>) : Comparable<ExtractClassCandidateGroup?> {
+class ExtractClassCandidateGroup(val source: SmartPsiElementPointer<KtElement>) :
+    Comparable<ExtractClassCandidateGroup?> {
     private val _candidates: ArrayList<ExtractClassCandidateRefactoring> = ArrayList()
     val extractedConcepts: ArrayList<ExtractedConcept> = ArrayList<ExtractedConcept>()
 
@@ -43,7 +44,7 @@ class ExtractClassCandidateGroup(val source: SmartPsiElementPointer<KtClassOrObj
             } while (previousSize < conceptEntities.size)
             val candidatesToBeRemoved: MutableSet<ExtractClassCandidateRefactoring?> =
                 HashSet()
-            val newConcept = ExtractedConcept(conceptEntities, source)
+            val newConcept = ExtractedConcept(conceptEntities)
             for (j in indexSet) {
                 newConcept.addConceptCluster(tempCandidates[j])
                 candidatesToBeRemoved.add(tempCandidates[j])

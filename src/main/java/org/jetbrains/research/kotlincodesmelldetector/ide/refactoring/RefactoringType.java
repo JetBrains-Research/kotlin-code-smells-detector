@@ -1,7 +1,7 @@
 package org.jetbrains.research.kotlincodesmelldetector.ide.refactoring;
 
 import com.intellij.openapi.progress.ProgressIndicator;
-import org.jetbrains.kotlin.psi.KtClassOrObject;
+import org.jetbrains.kotlin.psi.KtElement;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ProjectInfo;
 
 import java.util.ArrayList;
@@ -40,7 +40,7 @@ abstract public class RefactoringType {
             this.candidateRefactoring = candidateRefactoring;
         }
 
-        public abstract KtClassOrObject getSourceClass();
+        public abstract KtElement getSourceClass();
 
         public Object getCandidateRefactoring() {
             return candidateRefactoring;
