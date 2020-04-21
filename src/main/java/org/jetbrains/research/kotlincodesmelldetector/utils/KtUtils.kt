@@ -265,7 +265,7 @@ val KtDeclaration.referencesInBody: List<KtExpression>
 val KtNamedFunction.nameWithParameterList: FqName
     get() {
         return FqName(this.fqName.toString()
-                + this.valueParameters.map { "${it.name}: ${it.type()?.toString()}" }
+                + this.valueParameters.map { it.type()?.toString() }
                 .joinToString(", ", "(", ")"))
     }
 

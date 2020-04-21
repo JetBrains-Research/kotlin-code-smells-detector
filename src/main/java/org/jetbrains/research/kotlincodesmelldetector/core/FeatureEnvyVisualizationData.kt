@@ -10,7 +10,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ClassEntity
 import org.jetbrains.research.kotlincodesmelldetector.utils.nameWithParameterList
 
-class FeatureEnvyVisualizationData(private val sourceClass: ClassEntity, methodToBeMoved: KtNamedFunction, private val targetClass: ClassEntity) : VisualizationData {
+class FeatureEnvyVisualizationData(private val sourceClass: ClassEntity, val methodToBeMoved: KtNamedFunction, private val targetClass: ClassEntity) : VisualizationData {
     override val distinctSourceDependencies: Int
     override val distinctTargetDependencies: Int
     val sourceAssignments: Int
@@ -34,14 +34,23 @@ class FeatureEnvyVisualizationData(private val sourceClass: ClassEntity, methodT
                             containsSuperInvocation = true
                         }
                         else -> {
-                            receiverExpression.mainReference?.resolve()?.let { receiver ->
-                                if (receiver is KtNamedDeclaration && (receiver.type()?.constructor?.declarationDescriptor?.fqNameOrNull() == targetClass.fqName
-                                                || receiver.fqName == targetClass.fqName)) {
+                            val receiver =
+                                    if (receiverExpression is KtQualifiedExpression) {
+                                        if (receiverExpression.receiverExpression is KtThisExpression)
+                                            receiverExpression.selectorExpression else null
+                                    } else {
+                                        receiverExpression
+                                    }
+                            receiver?.mainReference?.resolve()?.let { resolvedReceiver ->
+                                if (resolvedReceiver is KtNamedDeclaration && (resolvedReceiver.type()?.constructor?.declarationDescriptor?.fqNameOrNull()
+                                                == targetClass.fqName || resolvedReceiver.fqName == targetClass.fqName)) {
                                     handlePossibleTargetMember(expression)
                                 }
                             }
                         }
                     }
+                } else if (receiverExpression is KtNameReferenceExpression) {
+                    handlePossibleSourceMember(receiverExpression)
                 }
             } else if (parent !is KtCallExpression) {
                 handlePossibleSourceMember(expression)
@@ -56,7 +65,8 @@ class FeatureEnvyVisualizationData(private val sourceClass: ClassEntity, methodT
     private fun handlePossibleSourceMember(expression: KtReferenceExpression) {
         val reference = when (expression) {
             is KtCallExpression -> expression.calleeExpression?.mainReference
-            else -> expression.mainReference
+            is KtNameReferenceExpression -> expression.mainReference
+            else -> null
         }
         reference?.resolve()?.let { called ->
             val name = if (called is KtNamedFunction) called.nameWithParameterList else called.getKotlinFqName()
@@ -76,7 +86,8 @@ class FeatureEnvyVisualizationData(private val sourceClass: ClassEntity, methodT
     private fun handlePossibleTargetMember(expression: KtReferenceExpression) {
         val reference = when (expression) {
             is KtCallExpression -> expression.calleeExpression?.mainReference
-            else -> expression.mainReference
+            is KtNameReferenceExpression -> expression.mainReference
+            else -> null
         }
         reference?.resolve()?.let { called ->
             val name = if (called is KtNamedFunction) called.nameWithParameterList else called.getKotlinFqName()
@@ -88,15 +99,13 @@ class FeatureEnvyVisualizationData(private val sourceClass: ClassEntity, methodT
         }
     }
 
-    private fun fieldIsDefined(expression: KtExpression): Boolean {
-        if (expression is KtReferenceExpression) {
-            var parent = expression.parent
-            if (parent is KtQualifiedExpression) {
-                parent = parent.parent
-            }
-            if (parent is KtBinaryExpression && parent.operationToken == KtTokens.EQ) {
-                return true
-            }
+    private fun fieldIsDefined(expression: KtReferenceExpression): Boolean {
+        var parent = expression.parent
+        if (parent is KtQualifiedExpression && parent.receiverExpression is KtThisExpression) {
+            parent = parent.parent
+        }
+        if (parent is KtBinaryExpression && parent.operationToken == KtTokens.EQ) {
+            return true
         }
         return false
     }

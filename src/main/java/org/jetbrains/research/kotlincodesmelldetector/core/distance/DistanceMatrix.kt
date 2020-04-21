@@ -16,7 +16,7 @@ import org.jetbrains.research.kotlincodesmelldetector.utils.nameWithParameterLis
 import java.util.*
 import kotlin.collections.ArrayList
 
-class DistanceMatrix(private val project: ProjectInfo) {
+class DistanceMatrix(private val project: ProjectInfo, private val indicator: ProgressIndicator) {
     val classes: MutableMap<FqName, ClassEntity> = mutableMapOf()
     private val entityIndexMap = mutableMapOf<FqName, Int>()
     private val classIndexMap = mutableMapOf<FqName, Int>()
@@ -32,7 +32,9 @@ class DistanceMatrix(private val project: ProjectInfo) {
     }
 
     private fun generateEntitySets() {
-        for (ktClassPointer in project.classes) {
+        indicator.text = KotlinCodeSmellDetectorBundle.message("feature.envy.parsing.indicator")
+        indicator.fraction = 0.0
+        for ((i, ktClassPointer) in project.classes.withIndex()) {
             val ktClass = ktClassPointer.element!!
             if (ktClass is KtClassOrObject) {
                 if (!(ktClass is KtClass && ktClass.isEnum())) {
@@ -40,8 +42,9 @@ class DistanceMatrix(private val project: ProjectInfo) {
                     classes[classEntity.fqName] = classEntity
                 }
             }
+            indicator.fraction = (i + 1).toDouble() / (2 * project.classes.size)
         }
-        for (myClass in classes.values) {
+        for ((i, myClass) in classes.values.withIndex()) {
             val classEntitySet: MutableSet<FqName> = mutableSetOf()
             for (method in myClass.methodList) {
                 if (methodIsDelegate(method) == null && method.nameWithParameterList !in entityMap) {
@@ -96,7 +99,9 @@ class DistanceMatrix(private val project: ProjectInfo) {
             }
             classList.add(myClass)
             classMap[myClass.fqName] = classEntitySet
+            indicator.fraction = 0.5 + (i + 1).toDouble() / (2 * classes.size)
         }
+        indicator.fraction = 1.0
     }
 
     private fun generateDistances() {

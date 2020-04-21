@@ -12,7 +12,7 @@ import org.jetbrains.research.kotlincodesmelldetector.utils.*
 import kotlin.reflect.jvm.internal.impl.name.FqName
 
 class MoveMethodCandidateRefactoring(val project: ProjectInfo, private val sourceClass: ClassEntity, val targetClass: ClassEntity, val sourceMethod: KtNamedFunction) : CandidateRefactoring(), Comparable<MoveMethodCandidateRefactoring> {
-    private val visualizationData: FeatureEnvyVisualizationData by lazy {
+    val visualizationData: FeatureEnvyVisualizationData by lazy {
         FeatureEnvyVisualizationData(sourceClass, sourceMethod, targetClass)
     }
 
