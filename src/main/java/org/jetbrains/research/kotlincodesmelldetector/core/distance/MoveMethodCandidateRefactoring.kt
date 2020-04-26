@@ -28,8 +28,7 @@ class MoveMethodCandidateRefactoring(val project: ProjectInfo, private val sourc
     }
 
     fun isApplicable(): Boolean {
-        return !sourceMethod.isSynchronized && !sourceMethod.overridesMethod && !targetClass.isInterface
-                && validTargetObject() && !targetClassContainsMethodWithSourceMethodSignature()
+        return  !targetClass.isInterface && validTargetObject() && !targetClassContainsMethodWithSourceMethodSignature()
                 && !isSourceClassATestClass() && !containsFieldAssignment() && !containsSuperInvocation()
                 && !oneToManyRelationshipWithTargetClass()
     }

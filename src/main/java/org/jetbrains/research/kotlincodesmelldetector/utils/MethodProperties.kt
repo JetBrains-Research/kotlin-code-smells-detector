@@ -18,6 +18,11 @@ val KtDeclaration.isSynchronized: Boolean
         return hasAnnotation("Synchronized")
     }
 
+val KtDeclaration.isOpen: Boolean
+    get() {
+        return hasModifier(KtTokens.OPEN_KEYWORD)
+    }
+
 val KtDeclaration.containsFieldAccessOfEnclosingClass: Boolean
     get() {
         //TODO
