@@ -1,15 +1,10 @@
 package org.jetbrains.research.kotlincodesmelldetector.core.distance
 
-import com.intellij.lang.jvm.actions.constructorRequest
 import com.intellij.psi.SmartPsiElementPointer
-import org.jetbrains.kotlin.nj2k.postProcessing.type
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
-import org.jetbrains.kotlin.psi.psiUtil.forEachDescendantOfType
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 import org.jetbrains.research.kotlincodesmelldetector.core.FeatureEnvyVisualizationData
 import org.jetbrains.research.kotlincodesmelldetector.utils.*
-import kotlin.reflect.jvm.internal.impl.name.FqName
 
 class MoveMethodCandidateRefactoring(val project: ProjectInfo, private val sourceClass: ClassEntity, val targetClass: ClassEntity, val sourceMethod: KtNamedFunction) : CandidateRefactoring(), Comparable<MoveMethodCandidateRefactoring> {
     val visualizationData: FeatureEnvyVisualizationData by lazy {
@@ -53,7 +48,7 @@ class MoveMethodCandidateRefactoring(val project: ProjectInfo, private val sourc
         }
         val localVariables = sourceMethod.bodyExpression?.collectDescendantsOfType<KtProperty>() ?: emptyList()
         for (variable in localVariables) {
-            if (variable.type()?.constructor?.declarationDescriptor?.fqNameOrNull() == targetClass.fqName) {
+            if (getConstructorType(variable) == targetClass.signature) {
                 return false
             }
         }
@@ -61,7 +56,7 @@ class MoveMethodCandidateRefactoring(val project: ProjectInfo, private val sourc
         candidateReferences.addAll(sourceMethod.valueParameters)
         candidateReferences.addAll(sourceClass.attributeList)
         for (candidate in candidateReferences) {
-            if (candidate.type()?.constructor?.declarationDescriptor?.fqNameOrNull() == targetClass.fqName) {
+            if (getConstructorType(candidate) == targetClass.signature) {
                 return true
             }
         }
@@ -73,11 +68,11 @@ class MoveMethodCandidateRefactoring(val project: ProjectInfo, private val sourc
         accessedVariables.addAll(sourceMethod.bodyExpression?.collectDescendantsOfType<KtProperty>() ?: emptyList())
         accessedVariables.addAll(sourceMethod.valueParameters)
         accessedVariables.addAll(visualizationData.sourceAccessedMembers.filter { member -> member is KtParameter || member is KtProperty })
-        val targetClassType = targetClass.fqName
+        val targetClassType = targetClass.signature
         for (variable in accessedVariables) {
             val type = getConstructorType(variable)
             type?.let {
-                if (isContainer(type) && getGenericType(variable) == targetClassType) {
+                if (isContainer(type) && getFirstTypeArgumentType(variable) == targetClassType) {
                     return true
                 }
             }
@@ -90,15 +85,16 @@ class MoveMethodCandidateRefactoring(val project: ProjectInfo, private val sourc
     }
 
     private fun targetClassContainsMethodWithSourceMethodSignature(): Boolean {
-        val methodSignature = sourceMethod.nameWithParameterList.shortName()
-        for (method in targetClass.methodList) {
-            if (methodSignature == method.nameWithParameterList.shortName()) {
+        val sourceMethodSignature = shortMethodName(sourceMethod)
+        for (targetMethod in targetClass.methodList) {
+            if (sourceMethodSignature == shortMethodName(targetMethod)) {
                 return true
             }
         }
         return false
     }
 
+    private fun shortMethodName(method: KtNamedFunction) = method.signature?.substringBeforeLast("(")?.substringAfterLast(".")
 
     override fun getTarget(): SmartPsiElementPointer<KtClassOrObject> {
         TODO("Not yet implemented")

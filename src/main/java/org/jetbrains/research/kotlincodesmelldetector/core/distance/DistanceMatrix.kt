@@ -1,29 +1,26 @@
 package org.jetbrains.research.kotlincodesmelldetector.core.distance
 
 import com.intellij.openapi.progress.ProgressIndicator
-import org.jetbrains.kotlin.idea.refactoring.fqName.getKotlinFqName
+import org.jetbrains.kotlin.idea.refactoring.fqName.fqName
 import org.jetbrains.kotlin.idea.references.mainReference
-import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.nj2k.postProcessing.type
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
 import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
 import org.jetbrains.kotlin.psi.psiUtil.forEachDescendantOfType
 import org.jetbrains.research.kotlincodesmelldetector.KotlinCodeSmellDetectorBundle
-import org.jetbrains.research.kotlincodesmelldetector.utils.getConstructorType
-import org.jetbrains.research.kotlincodesmelldetector.utils.getGenericType
-import org.jetbrains.research.kotlincodesmelldetector.utils.isContainer
-import org.jetbrains.research.kotlincodesmelldetector.utils.nameWithParameterList
+import org.jetbrains.research.kotlincodesmelldetector.utils.*
 import java.util.*
 import kotlin.collections.ArrayList
 
 class DistanceMatrix(private val project: ProjectInfo, private val indicator: ProgressIndicator) {
-    val classes: MutableMap<FqName, ClassEntity> = mutableMapOf()
-    private val entityIndexMap = mutableMapOf<FqName, Int>()
-    private val classIndexMap = mutableMapOf<FqName, Int>()
+    val classes: MutableMap<String, ClassEntity> = mutableMapOf()
+    private val entityIndexMap = mutableMapOf<String, Int>()
+    private val classIndexMap = mutableMapOf<String, Int>()
     private val classList = mutableListOf<ClassEntity>()
     private val entityList = mutableListOf<KtNamedDeclaration>()
-    private val entityMap = mutableMapOf<FqName, MutableSet<FqName>>()
-    private val classMap = mutableMapOf<FqName, Set<FqName>>()
+    private val entityMap = mutableMapOf<String, MutableSet<String>>()
+    private val classMap = mutableMapOf<String, Set<String>>()
     private val maximumNumberOfSourceClassMembersAccessedByMoveMethodCandidate = 2
 
     init {
@@ -33,110 +30,109 @@ class DistanceMatrix(private val project: ProjectInfo, private val indicator: Pr
 
     private fun generateEntitySets() {
         indicator.text = KotlinCodeSmellDetectorBundle.message("feature.envy.parsing.indicator")
-        indicator.fraction = 0.0
         for ((i, ktClassPointer) in project.classes.withIndex()) {
-            val ktClass = ktClassPointer.element!!
-            if (ktClass is KtClassOrObject) {
-                if (!(ktClass is KtClass && ktClass.isEnum())) {
-                    val classEntity = ClassEntity(ktClass)
-                    classes[classEntity.fqName] = classEntity
-                }
+            indicator.fraction = i.toDouble() / (2 * project.classes.size)
+            val ktClass = ktClassPointer.element ?: continue
+            val classSignature = (ktClass as? KtClassOrObject)?.signature ?: continue
+            if (!(ktClass is KtClass && ktClass.isEnum())) {
+                val classEntity = ClassEntity(ktClass, classSignature)
+                classes[classEntity.signature] = classEntity
             }
-            indicator.fraction = (i + 1).toDouble() / (2 * project.classes.size)
         }
+        indicator.fraction = 0.5
         for ((i, myClass) in classes.values.withIndex()) {
-            val classEntitySet: MutableSet<FqName> = mutableSetOf()
+            indicator.fraction = 0.5 + i.toDouble() / (2 * classes.size)
+            val classEntitySet: MutableSet<String> = mutableSetOf()
             for (method in myClass.methodList) {
-                if (methodIsDelegate(method) == null && method.nameWithParameterList !in entityMap) {
-                    val methodEntitySet: MutableSet<FqName> = mutableSetOf()
-                    method.bodyExpression?.forEachDescendantOfType<KtNameReferenceExpression> { reference ->
-                        reference.mainReference.resolve()?.let { called ->
-                            if (called is KtNamedDeclaration) {
-                                val containingClass = called.containingClassOrObject?.fqName
-                                if (containingClass != null && containingClass in classes.keys) {
-                                    called.fqName?.let { fqName ->
-                                        if (called is KtProperty || (called is KtParameter && called.hasValOrVar())) {
-                                            if (!attributeIsReference(called)) {
-                                                called.containingClassOrObject
-                                                if (entityMap.contains(fqName)) {
-                                                    entityMap[fqName]!!.add(method.nameWithParameterList)
-                                                } else {
-                                                    entityMap[fqName] = mutableSetOf(method.nameWithParameterList)
-                                                    entityList.add(called)
-                                                }
-                                                methodEntitySet.add(called.fqName!!)
-                                            }
-                                        }
-                                        if (called is KtNamedFunction) {
-                                            if (methodIsDelegate(called) != null) {
-                                                val nonDelegateMethod = getFinalNonDelegateMethod(called)
-                                                nonDelegateMethod?. let {
-                                                    methodEntitySet.add(nonDelegateMethod.nameWithParameterList)
-                                                }
-                                            }
-                                            else {
-                                                methodEntitySet.add(called.nameWithParameterList)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    entityMap[method.nameWithParameterList] = methodEntitySet
+                val methodSignature = method.signature ?: continue
+                if (methodIsDelegate(method) == null && method.signature !in entityMap) {
+                    entityMap[methodSignature] = handleReferencesInMethodBody(method, methodSignature)
                     entityList.add(method)
                 }
-                classEntitySet.add(method.nameWithParameterList)
+                classEntitySet.add(methodSignature)
             }
             for (attribute in myClass.attributeList) {
-                if (!attributeIsReference(attribute)) {
-                    if (attribute.fqName!! !in entityMap) {
-                        entityMap[attribute.fqName!!] = mutableSetOf()
-                        entityList.add(attribute)
-                    }
+                val attributeSignature = attribute.signature ?: continue
+                if (!attributeIsReference(attribute) && attributeSignature !in entityMap) {
+                    entityMap[attributeSignature] = mutableSetOf()
+                    entityList.add(attribute)
                 }
-                classEntitySet.add(attribute.fqName!!)
+                classEntitySet.add(attributeSignature)
             }
             classList.add(myClass)
-            classMap[myClass.fqName] = classEntitySet
-            indicator.fraction = 0.5 + (i + 1).toDouble() / (2 * classes.size)
+            classMap[myClass.signature] = classEntitySet
         }
         indicator.fraction = 1.0
     }
 
+    private fun handleReferencesInMethodBody(method: KtNamedFunction, methodSignature: String): MutableSet<String> {
+        val methodEntitySet = mutableSetOf<String>()
+        method.bodyExpression?.forEachDescendantOfType<KtNameReferenceExpression> { reference ->
+            reference.mainReference.resolve()?.let { called ->
+                if (called is KtNamedDeclaration) {
+                    val containingClass = called.containingClassOrObject?.signature
+                    if (containingClass != null && containingClass in classes.keys) {
+                        called.signature?.let { calledSignature ->
+                            if (called is KtProperty || (called is KtParameter && called.hasValOrVar())) {
+                                if (!attributeIsReference(called)) {
+                                    called.containingClassOrObject
+                                    if (calledSignature in entityMap) {
+                                        entityMap[calledSignature]!!.add(methodSignature)
+                                    } else {
+                                        entityMap[calledSignature] = mutableSetOf(methodSignature)
+                                        entityList.add(called)
+                                    }
+                                    methodEntitySet.add(calledSignature)
+                                }
+                            }
+                            if (called is KtNamedFunction) {
+                                if (methodIsDelegate(called) != null) {
+                                    val nonDelegateMethod = getFinalNonDelegateMethod(called)
+                                    nonDelegateMethod?.signature?.let { nonDelegateMethodSignature ->
+                                        methodEntitySet.add(nonDelegateMethodSignature)
+                                    }
+                                } else {
+                                    methodEntitySet.add(calledSignature)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return methodEntitySet
+    }
+
     private fun generateDistances() {
-        val entityNames = arrayOfNulls<FqName>(entityList.size)
-        val classNames = arrayOfNulls<FqName>(classList.size)
+        val entitySignatures = arrayOfNulls<String>(entityList.size)
+        val classSignatures = arrayOfNulls<String>(classList.size)
 
         for ((i, entity) in entityList.withIndex()) {
-            val entityName = if (entity is KtNamedFunction) entity.nameWithParameterList else entity.getKotlinFqName()!!
-            entityNames[i] = entityName
+            val entityName = entity.signature ?: continue
+            entitySignatures[i] = entityName
             entityIndexMap[entityName] = i
         }
         for ((j, myClass) in classList.withIndex()) {
-            val className = myClass.fqName
-            classNames[j] = className
+            val className = myClass.signature
+            classSignatures[j] = className
             if (!classIndexMap.containsKey(className))
                 classIndexMap[className] = j
         }
     }
 
-    fun getMoveMethodCandidateRefactoringsByAccess(classNamesToBeExamined: Set<FqName>, indicator: ProgressIndicator): List<MoveMethodCandidateRefactoring> {
+    fun getMoveMethodCandidateRefactoringsByAccess(classNamesToBeExamined: Set<String>, indicator: ProgressIndicator): List<MoveMethodCandidateRefactoring> {
         val candidateRefactoringList: MutableList<MoveMethodCandidateRefactoring> = mutableListOf()
         indicator.text = KotlinCodeSmellDetectorBundle.message("feature.envy.identification.indicator")
-        indicator.fraction = 0.0
-        val entityCount = entityList.size
-        var processedEntities = 0
-        for (entity in entityList) {
-            processedEntities += 1
+        for ((i, entity) in entityList.withIndex()) {
+            indicator.fraction = i.toDouble() / entityList.size
             if (entity is KtNamedFunction) {
-                val sourceClass: FqName = entity.containingClassOrObject!!.fqName!!
+                val sourceClass: String = entity.containingClassOrObject?.signature ?: continue
                 if (classNamesToBeExamined.contains(sourceClass)) {
-                    val entitySet = entityMap[entity.nameWithParameterList]!!
+                    val entitySet = entityMap[entity.signature]!!
                     val accessMap = computeAccessMap(entitySet)
-                    val sortedByAccessMap = TreeMap<Int, MutableList<FqName>>()
+                    val sortedByAccessMap = TreeMap<Int, MutableList<String>>()
                     for (targetClass in accessMap.keys) {
-                        val numberOfAccessedEntities = accessMap[targetClass]!!.size
+                        val numberOfAccessedEntities = accessMap[targetClass]?.size ?: 0
                         if (sortedByAccessMap.containsKey(numberOfAccessedEntities)) {
                             sortedByAccessMap[numberOfAccessedEntities]!!.add(targetClass)
                         } else {
@@ -155,11 +151,11 @@ class DistanceMatrix(private val project: ProjectInfo, private val indicator: Pr
                                 val myTargetClass = classList[classIndexMap[targetClass]!!]
                                 val candidate = MoveMethodCandidateRefactoring(project, mySourceClass, myTargetClass, entity)
                                 // TODO: additional methods to be moved
-                                val methodEntitySet = entityMap[entity.nameWithParameterList]!!
+                                val methodEntitySet = entityMap[entity.signature]!!
                                 val sourceClassEntitySet = classMap[sourceClass]!!
                                 val targetClassEntitySet = classMap[targetClass]!!
-                                val intersectionWithSourceClass: MutableSet<FqName> = methodEntitySet.intersect(sourceClassEntitySet).toMutableSet()
-                                val intersectionWithTargetClass: MutableSet<FqName> = methodEntitySet.intersect(targetClassEntitySet).toMutableSet()
+                                val intersectionWithSourceClass: MutableSet<String> = methodEntitySet.intersect(sourceClassEntitySet).toMutableSet()
+                                val intersectionWithTargetClass: MutableSet<String> = methodEntitySet.intersect(targetClassEntitySet).toMutableSet()
                                 if (intersectionWithTargetClass.size >= intersectionWithSourceClass.size) {
                                     if (candidate.isApplicable() && !targetClassInheritedByAnotherCandidateTargetClass(targetClass, accessMap.keys)) {
                                         val sourceClassDependencies = candidate.distinctSourceDependencies
@@ -177,26 +173,25 @@ class DistanceMatrix(private val project: ProjectInfo, private val indicator: Pr
                     }
                 }
             }
-            indicator.fraction = processedEntities.toDouble() / entityCount
         }
         indicator.fraction = 1.0
         return candidateRefactoringList
     }
 
-    private fun targetClassInheritedByAnotherCandidateTargetClass(targetClass: FqName, candidateTargetClasses: Set<FqName>): Boolean {
+    private fun targetClassInheritedByAnotherCandidateTargetClass(targetClass: String, candidateTargetClasses: Set<String>): Boolean {
         // TODO: not yet implemented
         return false
     }
 
-    private fun computeAccessMap(entitySet: Set<FqName>): Map<FqName, ArrayList<FqName>> {
-        val accessMap: MutableMap<FqName, ArrayList<FqName>> = mutableMapOf()
+    private fun computeAccessMap(entitySet: Set<String>): Map<String, ArrayList<String>> {
+        val accessMap: MutableMap<String, ArrayList<String>> = mutableMapOf()
         for (entity in entitySet) {
-            val classOrigin = entity.parent()
+            val classOrigin = entity.substringBeforeLast("(").substringBeforeLast(".")
             if (accessMap.containsKey(classOrigin)) {
                 val list = accessMap[classOrigin]!!
                 list.add(entity)
             } else {
-                val list = ArrayList<FqName>()
+                val list = ArrayList<String>()
                 list.add(entity)
                 if (classMap.containsKey(classOrigin))
                     accessMap[classOrigin] = list
@@ -212,7 +207,7 @@ class DistanceMatrix(private val project: ProjectInfo, private val indicator: Pr
         val type = getConstructorType(attribute)
         type?.let {
             if (isContainer(type)) {
-                val genericType = getGenericType(attribute)
+                val genericType = getFirstTypeArgumentType(attribute)
                 genericType?.let {
                     if (genericType in classes.keys) {
                         return true
@@ -239,7 +234,7 @@ class DistanceMatrix(private val project: ProjectInfo, private val indicator: Pr
             }
             callExpression?.calleeExpression?.mainReference?.resolve()?.let { callee ->
                 if (callee is KtNamedFunction) {
-                    val containingClass = callee.containingClassOrObject?.fqName
+                    val containingClass = callee.containingClassOrObject?.signature
                     if (containingClass != null && containingClass in classes.keys)
                         return callee
                 }

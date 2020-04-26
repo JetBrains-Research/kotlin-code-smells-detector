@@ -1,6 +1,5 @@
 package org.jetbrains.research.kotlincodesmelldetector.core
 
-import org.jetbrains.kotlin.idea.refactoring.fqName.getKotlinFqName
 import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.nj2k.postProcessing.type
@@ -8,7 +7,7 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.forEachDescendantOfType
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ClassEntity
-import org.jetbrains.research.kotlincodesmelldetector.utils.nameWithParameterList
+import org.jetbrains.research.kotlincodesmelldetector.utils.signature
 
 class FeatureEnvyVisualizationData(private val sourceClass: ClassEntity, val methodToBeMoved: KtNamedFunction, private val targetClass: ClassEntity) : VisualizationData {
     override val distinctSourceDependencies: Int
@@ -42,8 +41,8 @@ class FeatureEnvyVisualizationData(private val sourceClass: ClassEntity, val met
                                         receiverExpression
                                     }
                             receiver?.mainReference?.resolve()?.let { resolvedReceiver ->
-                                if (resolvedReceiver is KtNamedDeclaration && (resolvedReceiver.type()?.constructor?.declarationDescriptor?.fqNameOrNull()
-                                                == targetClass.fqName || resolvedReceiver.fqName == targetClass.fqName)) {
+                                if (resolvedReceiver is KtNamedDeclaration && (resolvedReceiver.type()?.constructor?.declarationDescriptor?.fqNameOrNull()?.asString()
+                                                == targetClass.signature || resolvedReceiver.signature == targetClass.signature)) {
                                     handlePossibleTargetMember(expression)
                                 }
                             }
@@ -69,8 +68,7 @@ class FeatureEnvyVisualizationData(private val sourceClass: ClassEntity, val met
             else -> null
         }
         reference?.resolve()?.let { called ->
-            val name = if (called is KtNamedFunction) called.nameWithParameterList else called.getKotlinFqName()
-            if (name != null && called is KtNamedDeclaration) {
+            if (called is KtNamedDeclaration) {
                 if (called in targetClass.attributeList || called in targetClass.methodList) {
                     targetAccessedMembers.add(called)
                 } else if (called in sourceClass.attributeList || called in sourceClass.methodList) {
@@ -79,6 +77,7 @@ class FeatureEnvyVisualizationData(private val sourceClass: ClassEntity, val met
                         definedSourceFields.add(called)
                     }
                 }
+
             }
         }
     }
@@ -90,11 +89,8 @@ class FeatureEnvyVisualizationData(private val sourceClass: ClassEntity, val met
             else -> null
         }
         reference?.resolve()?.let { called ->
-            val name = if (called is KtNamedFunction) called.nameWithParameterList else called.getKotlinFqName()
-            name?.let {
-                if (called is KtNamedDeclaration && (called in targetClass.attributeList || called in targetClass.methodList)) {
-                    targetAccessedMembers.add(called)
-                }
+            if (called is KtNamedDeclaration && (called in targetClass.attributeList || called in targetClass.methodList)) {
+                targetAccessedMembers.add(called)
             }
         }
     }

@@ -9,7 +9,7 @@ import org.jetbrains.kotlin.psi.KtClassOrObject;
 import org.jetbrains.kotlin.psi.KtNamedFunction;
 import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.Refactoring;
 
-import static org.jetbrains.research.kotlincodesmelldetector.utils.KtUtilsKt.getNameWithParameterList;
+import static org.jetbrains.research.kotlincodesmelldetector.utils.KtUtilsKt.getSignature;
 
 import java.util.Optional;
 
@@ -49,7 +49,7 @@ public class MoveMethodRefactoring implements Refactoring {
                 (Computable<SmartPsiElementPointer<KtClassOrObject>>) () ->
                         SmartPointerManager.getInstance(targetClass.getProject()).createSmartPsiElementPointer(targetClass)
         );
-        this.qualifiedMethodName = getNameWithParameterList(this.method.getElement()).toString();
+        this.qualifiedMethodName = getSignature(this.method.getElement());
         this.sourceAccessedMembers = sourceAccessedMembers;
         this.targetAccessedMembers = targetAccessedMembers;
     }
@@ -73,8 +73,8 @@ public class MoveMethodRefactoring implements Refactoring {
     @NotNull
     @Override
     public String getDescription() {
-        return getNameWithParameterList(method.getElement()).toString() + DELIMITER
-                + targetClass.getElement().getFqName().toString();
+        return getSignature(method.getElement()) + DELIMITER
+                + getSignature(targetClass.getElement());
     }
 
     @NotNull

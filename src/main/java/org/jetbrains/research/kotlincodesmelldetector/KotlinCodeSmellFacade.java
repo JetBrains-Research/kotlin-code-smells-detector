@@ -40,8 +40,8 @@ public class KotlinCodeSmellFacade {
     public static List<MoveMethodCandidateRefactoring> getMoveMethodRefactoringOpportunities(ProjectInfo project, ProgressIndicator indicator) {
         DistanceMatrix distanceMatrix = new DistanceMatrix(project, indicator);
 
-        Set<FqName> classNamesToBeExamined = new LinkedHashSet<>();
-        for (Map.Entry<FqName, ClassEntity> entry: distanceMatrix.getClasses().entrySet()) {
+        Set<String> classNamesToBeExamined = new LinkedHashSet<>();
+        for (Map.Entry<String, ClassEntity> entry: distanceMatrix.getClasses().entrySet()) {
             if (!entry.getValue().isEnum() && !entry.getValue().isInterface()) {
                 classNamesToBeExamined.add(entry.getKey());
             }

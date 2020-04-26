@@ -1,9 +1,7 @@
 package org.jetbrains.research.kotlincodesmelldetector.utils
 
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiElementVisitor
-import com.intellij.psi.SmartPointerManager
-import com.intellij.psi.SmartPsiElementPointer
+import com.intellij.psi.*
+import org.jetbrains.kotlin.idea.refactoring.fqName.fqName
 import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.nj2k.postProcessing.resolve
@@ -40,10 +38,10 @@ val KtElement.declaredElements: List<KtDeclaration>
 val KtElement?.methods: List<KtDeclaration>
     get() {
         val result = this?.declaredElements
-            ?.filter { ktDeclaration -> ktDeclaration.isMethod }
-            ?.filter { ktDeclaration -> ktDeclaration.correctMethod }
-            ?.toMutableList()
-            ?: mutableListOf()
+                ?.filter { ktDeclaration -> ktDeclaration.isMethod }
+                ?.filter { ktDeclaration -> ktDeclaration.correctMethod }
+                ?.toMutableList()
+                ?: mutableListOf()
 
         if (this is KtClassOrObject) {
             this.companionObjects.forEach { companionObject -> result.addAll(companionObject.methods) }
@@ -58,8 +56,8 @@ val KtElement?.methods: List<KtDeclaration>
 val KtElement?.fields: List<KtDeclaration>
     get() {
         return this?.declaredElements
-            ?.filter { ktDeclaration -> ktDeclaration.isField }
-            ?: listOf()
+                ?.filter { ktDeclaration -> ktDeclaration.isField }
+                ?: listOf()
     }
 
 /**
@@ -168,17 +166,17 @@ fun generateFullEntitySets(entities: List<KtElement>): Map<KtElement, Set<PsiEle
 fun usedThroughThisReference(ktExpression: KtExpression): Boolean {
     //TODO test
     val resolvedElement =
-        when (ktExpression) {
-            is KtCallExpression -> {
-                ktExpression.calleeExpression?.mainReference?.resolve() ?: return false
+            when (ktExpression) {
+                is KtCallExpression -> {
+                    ktExpression.calleeExpression?.mainReference?.resolve() ?: return false
+                }
+                is KtReferenceExpression -> {
+                    ktExpression.mainReference.resolve() ?: return false
+                }
+                else -> {
+                    return false
+                }
             }
-            is KtReferenceExpression -> {
-                ktExpression.mainReference.resolve() ?: return false
-            }
-            else -> {
-                return false
-            }
-        }
 
     return when {
         resolvedElement !is KtFunction && resolvedElement !is KtProperty && resolvedElement !is KtParameter -> {
@@ -186,8 +184,8 @@ fun usedThroughThisReference(ktExpression: KtExpression): Boolean {
         }
 
         resolvedElement is KtFunction && resolvedElement.isLocal
-            || resolvedElement is KtProperty && resolvedElement.isLocal
-            || resolvedElement is KtParameter && !resolvedElement.hasValOrVar() -> {
+                || resolvedElement is KtProperty && resolvedElement.isLocal
+                || resolvedElement is KtParameter && !resolvedElement.hasValOrVar() -> {
             false
         }
 
@@ -262,25 +260,32 @@ val KtDeclaration.referencesInBody: List<KtExpression>
         return result
     }
 
-val KtNamedFunction.nameWithParameterList: FqName
+val KtNamedDeclaration.signature: String?
     get() {
-        return FqName(this.fqName.toString()
-                + this.valueParameters.map { it.type()?.toString() }
-                .joinToString(", ", "(", ")"))
+        val fqName = this.fqName?.asString() ?: return null
+        if (this is KtNamedFunction) {
+            val parameters = this.valueParameters
+                    .map { it.type()?.toString() }
+                    .joinToString(", ", "(", ")")
+            return fqName + parameters
+        }
+        return fqName
     }
 
-fun isContainer(type: FqName): Boolean {
-    val acceptableOriginClassNames = listOf("kotlin.collections.Collection", "kotlin.collections.MutableCollection",
-            "kotlin.collections.AbstractCollection", "kotlin.collections.List", "kotlin.collections.MutableList",
-            "kotlin.collections.AbstractList", "kotlin.collections.ArrayList", "java.util.LinkedList",
-            "kotlin.collections.Set", "kotlin.collections.MutableSet", "java.util.AbstractSet", "java.util.HashSet",
-            "java.util.LinkedHashSet", "java.util.SortedSet", "java.util.TreeSet", "java.util.Vector", "java.util.Stack")
-    return type.toString() in acceptableOriginClassNames
-}
-fun getConstructorType(declaration: KtNamedDeclaration): FqName? {
-    return declaration.type()?.constructor?.declarationDescriptor?.fqNameOrNull()
+val acceptableOriginClassNames = setOf("kotlin.collections.Collection", "kotlin.collections.MutableCollection",
+        "kotlin.collections.AbstractCollection", "kotlin.collections.List", "kotlin.collections.MutableList",
+        "kotlin.collections.AbstractList", "kotlin.collections.ArrayList", "java.util.LinkedList",
+        "kotlin.collections.Set", "kotlin.collections.MutableSet", "java.util.AbstractSet", "java.util.HashSet",
+        "java.util.LinkedHashSet", "java.util.SortedSet", "java.util.TreeSet", "java.util.Vector", "java.util.Stack")
+
+fun isContainer(type: String): Boolean {
+    return type in acceptableOriginClassNames
 }
 
-fun getGenericType(declaration: KtNamedDeclaration): FqName? {
-    return declaration.type()?.arguments?.getOrNull(0)?.type?.constructor?.declarationDescriptor?.fqNameOrNull()
+fun getConstructorType(declaration: KtNamedDeclaration): String? {
+    return declaration.type()?.fqName?.asString()
+}
+
+fun getFirstTypeArgumentType(declaration: KtNamedDeclaration): String? {
+    return declaration.type()?.arguments?.getOrNull(0)?.type?.constructor?.declarationDescriptor?.fqNameOrNull()?.asString()
 }
