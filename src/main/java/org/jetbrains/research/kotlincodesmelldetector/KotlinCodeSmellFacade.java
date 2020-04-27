@@ -2,17 +2,12 @@ package org.jetbrains.research.kotlincodesmelldetector;
 
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.psi.SmartPsiElementPointer;
-import org.jetbrains.kotlin.psi.KtElement;
+import org.jetbrains.kotlin.name.FqName;
 import org.jetbrains.kotlin.psi.KtFile;
-import org.jetbrains.research.kotlincodesmelldetector.core.distance.ExtractClassCandidateGroup;
-import org.jetbrains.research.kotlincodesmelldetector.core.distance.ExtractClassCandidateRefactoring;
-import org.jetbrains.research.kotlincodesmelldetector.core.distance.GodClassDistanceMatrixKt;
-import org.jetbrains.research.kotlincodesmelldetector.core.distance.ProjectInfo;
+import org.jetbrains.kotlin.psi.KtElement;
+import org.jetbrains.research.kotlincodesmelldetector.core.distance.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.TreeSet;
+import java.util.*;
 
 import static org.jetbrains.research.kotlincodesmelldetector.utils.ExtractUtilsKt.extractClasses;
 import static org.jetbrains.research.kotlincodesmelldetector.utils.ExtractUtilsKt.getCurrentFileOpenInEditor;
@@ -40,5 +35,20 @@ public class KotlinCodeSmellFacade {
         }
 
         return new TreeSet<>(groupedBySourceClassMap.values());
+    }
+
+    public static List<MoveMethodCandidateRefactoring> getMoveMethodRefactoringOpportunities(ProjectInfo project, ProgressIndicator indicator) {
+        DistanceMatrix distanceMatrix = new DistanceMatrix(project, indicator);
+
+        Set<String> classNamesToBeExamined = new LinkedHashSet<>();
+        for (Map.Entry<String, ClassEntity> entry: distanceMatrix.getClasses().entrySet()) {
+            if (!entry.getValue().isEnum() && !entry.getValue().isInterface()) {
+                classNamesToBeExamined.add(entry.getKey());
+            }
+        }
+        List<MoveMethodCandidateRefactoring> moveMethodCandidateRefactorings =
+                distanceMatrix.getMoveMethodCandidateRefactoringsByAccess(classNamesToBeExamined, indicator);
+        Collections.sort(moveMethodCandidateRefactorings);
+        return moveMethodCandidateRefactorings;
     }
 }
