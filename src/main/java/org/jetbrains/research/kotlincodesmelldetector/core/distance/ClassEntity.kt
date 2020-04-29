@@ -1,0 +1,35 @@
+package org.jetbrains.research.kotlincodesmelldetector.core.distance
+
+import org.jetbrains.kotlin.idea.caches.resolve.resolveToDescriptorIfAny
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
+import org.jetbrains.kotlin.resolve.scopes.getDescriptorsFiltered
+import org.jetbrains.research.kotlincodesmelldetector.utils.signature
+
+data class ClassEntity(val element: KtClassOrObject, val signature: String) {
+    val isEnum = element is KtClass && element.isEnum()
+    val isInterface = element is KtClass && element.isInterface()
+    val attributeList: MutableList<KtNamedDeclaration> = mutableListOf()
+    val methodList: MutableList<KtNamedFunction> = mutableListOf()
+
+    init {
+        val members = element.resolveToDescriptorIfAny()?.unsubstitutedMemberScope
+        members?.let {
+            for (variable in it.getDescriptorsFiltered(DescriptorKindFilter.VARIABLES)) {
+                variable.findPsi()?.let { psiElement ->
+                    if (psiElement is KtProperty || (psiElement is KtParameter && psiElement.hasValOrVar())) {
+                        attributeList.add(psiElement as KtNamedDeclaration)
+                    }
+                }
+            }
+            for (function in it.getDescriptorsFiltered(DescriptorKindFilter.FUNCTIONS)) {
+                function.findPsi()?.let { psiElement ->
+                    if (psiElement is KtNamedFunction) {
+                        methodList.add(psiElement)
+                    }
+                }
+            }
+        }
+    }
+}

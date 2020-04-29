@@ -6,22 +6,15 @@ import com.intellij.psi.SmartPointerManager
 import com.intellij.psi.SmartPsiElementPointer
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithSource
 import org.jetbrains.kotlin.idea.caches.resolve.resolveToDescriptorIfAny
+import com.intellij.psi.*
+import org.jetbrains.kotlin.idea.refactoring.fqName.fqName
 import org.jetbrains.kotlin.idea.references.mainReference
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.nj2k.postProcessing.resolve
-import org.jetbrains.kotlin.psi.KtCallExpression
-import org.jetbrains.kotlin.psi.KtClassOrObject
-import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
-import org.jetbrains.kotlin.psi.KtElement
-import org.jetbrains.kotlin.psi.KtExpression
-import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtFunction
-import org.jetbrains.kotlin.psi.KtParameter
-import org.jetbrains.kotlin.psi.KtProperty
-import org.jetbrains.kotlin.psi.KtPropertyAccessor
-import org.jetbrains.kotlin.psi.KtReferenceExpression
-import org.jetbrains.kotlin.psi.KtThisExpression
+import org.jetbrains.kotlin.nj2k.postProcessing.type
+import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 
 /**
  * If this is KtFile, returns all top-level functions and properties.
@@ -51,10 +44,10 @@ val KtElement.declaredElements: List<KtDeclaration>
 val KtElement?.methods: List<KtDeclaration>
     get() {
         val result = this?.declaredElements
-            ?.filter { ktDeclaration -> ktDeclaration.isMethod }
-            ?.filter { ktDeclaration -> ktDeclaration.correctMethod }
-            ?.toMutableList()
-            ?: mutableListOf()
+                ?.filter { ktDeclaration -> ktDeclaration.isMethod }
+                ?.filter { ktDeclaration -> ktDeclaration.correctMethod }
+                ?.toMutableList()
+                ?: mutableListOf()
 
         if (this is KtClassOrObject) {
             this.companionObjects.forEach { companionObject -> result.addAll(companionObject.methods) }
@@ -69,8 +62,8 @@ val KtElement?.methods: List<KtDeclaration>
 val KtElement?.fields: List<KtDeclaration>
     get() {
         return this?.declaredElements
-            ?.filter { ktDeclaration -> ktDeclaration.isField }
-            ?: listOf()
+                ?.filter { ktDeclaration -> ktDeclaration.isField }
+                ?: listOf()
     }
 
 /**
@@ -180,17 +173,17 @@ fun generateFullEntitySets(entities: List<KtElement>): Map<KtElement, Set<PsiEle
 fun usedThroughThisReference(ktExpression: KtExpression): Boolean {
     //TODO test
     val resolvedElement =
-        when (ktExpression) {
-            is KtCallExpression -> {
-                ktExpression.calleeExpression?.mainReference?.resolve() ?: return false
+            when (ktExpression) {
+                is KtCallExpression -> {
+                    ktExpression.calleeExpression?.mainReference?.resolve() ?: return false
+                }
+                is KtReferenceExpression -> {
+                    ktExpression.mainReference.resolve() ?: return false
+                }
+                else -> {
+                    return false
+                }
             }
-            is KtReferenceExpression -> {
-                ktExpression.mainReference.resolve() ?: return false
-            }
-            else -> {
-                return false
-            }
-        }
 
     return when {
         resolvedElement !is KtFunction && resolvedElement !is KtProperty && resolvedElement !is KtParameter -> {
@@ -198,8 +191,8 @@ fun usedThroughThisReference(ktExpression: KtExpression): Boolean {
         }
 
         resolvedElement is KtFunction && resolvedElement.isLocal
-            || resolvedElement is KtProperty && resolvedElement.isLocal
-            || resolvedElement is KtParameter && !resolvedElement.hasValOrVar() -> {
+                || resolvedElement is KtProperty && resolvedElement.isLocal
+                || resolvedElement is KtParameter && !resolvedElement.hasValOrVar() -> {
             false
         }
 
@@ -273,3 +266,33 @@ val KtDeclaration.referencesInBody: List<KtExpression>
 
         return result
     }
+
+val KtNamedDeclaration.signature: String?
+    get() {
+        val fqName = this.fqName?.asString() ?: return null
+        if (this is KtNamedFunction) {
+            val parameters = this.valueParameters
+                    .map { it.type()?.toString() }
+                    .joinToString(", ", "(", ")")
+            return fqName + parameters
+        }
+        return fqName
+    }
+
+val acceptableOriginClassNames = setOf("kotlin.collections.Collection", "kotlin.collections.MutableCollection",
+        "kotlin.collections.AbstractCollection", "kotlin.collections.List", "kotlin.collections.MutableList",
+        "kotlin.collections.AbstractList", "kotlin.collections.ArrayList", "java.util.LinkedList",
+        "kotlin.collections.Set", "kotlin.collections.MutableSet", "java.util.AbstractSet", "java.util.HashSet",
+        "java.util.LinkedHashSet", "java.util.SortedSet", "java.util.TreeSet", "java.util.Vector", "java.util.Stack")
+
+fun isContainer(type: String): Boolean {
+    return type in acceptableOriginClassNames
+}
+
+fun getConstructorType(declaration: KtNamedDeclaration): String? {
+    return declaration.type()?.fqName?.asString()
+}
+
+fun getFirstTypeArgumentType(declaration: KtNamedDeclaration): String? {
+    return declaration.type()?.arguments?.getOrNull(0)?.type?.constructor?.declarationDescriptor?.fqNameOrNull()?.asString()
+}
