@@ -1,5 +1,6 @@
 package org.jetbrains.research.kotlincodesmelldetector
 
+import com.intellij.analysis.AnalysisScope
 import com.intellij.openapi.progress.util.ProgressIndicatorBase
 import com.intellij.testFramework.UsefulTestCase
 import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase
@@ -17,7 +18,7 @@ internal class FeatureEnvyTest : LightJavaCodeInsightFixtureTestCase() {
         myFixture.configureByFile(PATH_TO_TESTS + fileName)
         myFixture.allowTreeAccessForAllFiles()
         val project = myFixture.project
-        val projectInfo = ProjectInfo(project)
+        val projectInfo = ProjectInfo(AnalysisScope(project))
         return KotlinCodeSmellFacade.getMoveMethodRefactoringOpportunities(projectInfo, ProgressIndicatorBase())
     }
 
@@ -76,6 +77,10 @@ internal class FeatureEnvyTest : LightJavaCodeInsightFixtureTestCase() {
     fun testMethodCanBeMoved() {
         val fileName = "TestMethodCanBeMoved.kt"
         val refactorings: List<MoveMethodCandidateRefactoring> = getMoveMethodCandidates(fileName)
-        UsefulTestCase.assertEquals(0, refactorings.size)
+        UsefulTestCase.assertEquals(1, refactorings.size)
+        val featureEnvyVisualizationData: FeatureEnvyVisualizationData = refactorings[0].visualizationData
+        assertEquals("methodAccessesDataClassWithMethod", featureEnvyVisualizationData.methodToBeMoved.name)
+        assertEquals(2, featureEnvyVisualizationData.distinctTargetDependencies)
+        assertEquals(0, featureEnvyVisualizationData.distinctSourceDependencies)
     }
 }

@@ -1,5 +1,6 @@
 package org.jetbrains.research.kotlincodesmelldetector
 
+import com.intellij.analysis.AnalysisScope
 import com.intellij.openapi.progress.util.ProgressIndicatorBase
 import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase
 import junit.framework.TestCase
@@ -23,7 +24,7 @@ internal class GodClassDistanceMatrixTest : LightJavaCodeInsightFixtureTestCase(
         myFixture.testDataPath = PATH_TO_TESTDATA
         myFixture.configureByFile(PATH_TO_TESTS + classFileName)
         val project = myFixture.project
-        val projectInfo = ProjectInfo(project)
+        val projectInfo = ProjectInfo(AnalysisScope(project))
         val set: Set<ExtractClassCandidateGroup> =
             KotlinCodeSmellFacade.getExtractClassRefactoringOpportunities(projectInfo, ProgressIndicatorBase())
 

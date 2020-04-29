@@ -47,9 +47,11 @@ class DistanceMatrix(private val project: ProjectInfo, private val indicator: Pr
             indicator.fraction = i.toDouble() / (2 * project.classes.size)
             val ktClass = ktClassPointer.element ?: continue
             val classSignature = (ktClass as? KtClassOrObject)?.signature ?: continue
-            if (!(ktClass is KtClass && ktClass.isEnum())) {
+            if (!(ktClass is KtClass && ktClass.isEnum()) && !(ktClass is KtObjectDeclaration && ktClass.isCompanion())) {
                 val classEntity = ClassEntity(ktClass, classSignature)
-                classes[classEntity.signature] = classEntity
+                if (!(ktClass is KtClass && ktClass.isData() && classEntity.methodList.size == 0)) {
+                    classes[classEntity.signature] = classEntity
+                }
             }
         }
         indicator.fraction = 0.5

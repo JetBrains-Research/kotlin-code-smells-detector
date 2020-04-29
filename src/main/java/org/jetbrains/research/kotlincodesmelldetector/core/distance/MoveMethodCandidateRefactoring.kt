@@ -1,6 +1,7 @@
 package org.jetbrains.research.kotlincodesmelldetector.core.distance
 
 import com.intellij.psi.SmartPsiElementPointer
+import org.jetbrains.kotlin.nj2k.postProcessing.type
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
 import org.jetbrains.research.kotlincodesmelldetector.core.FeatureEnvyVisualizationData
@@ -55,7 +56,7 @@ class MoveMethodCandidateRefactoring(val project: ProjectInfo, private val sourc
         candidateReferences.addAll(sourceMethod.valueParameters)
         candidateReferences.addAll(sourceClass.attributeList)
         for (candidate in candidateReferences) {
-            if (getConstructorType(candidate) == targetClass.signature) {
+            if (getConstructorType(candidate) == targetClass.signature && candidate.type()?.isMarkedNullable == false) {
                 return true
             }
         }
