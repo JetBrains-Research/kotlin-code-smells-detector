@@ -55,14 +55,22 @@ fun getExtractClassCandidateRefactorings(
                 indicator.fraction = processedClusters.toDouble() / clusters.size
                 val candidate =
                     ExtractClassCandidateRefactoring(projectInfo, sourceClass.toPointer(), cluster.entities)
+
+                candidateList.add(candidate) //TODO remove
                 if (candidate.isApplicable) {
                     val sourceClassDependencies = candidate.distinctSourceDependencies
                     val extractedClassDependencies = candidate.distinctTargetDependencies
+
+
+                    //candidateList.add(candidate) //TODO remove
+
                     if (sourceClassDependencies <= maximumNumberOfSourceClassMembersAccessedByExtractClassCandidate &&
                         sourceClassDependencies < extractedClassDependencies
                     ) {
-                        candidateList.add(candidate)
+                        candidateList.add(candidate) //TODO
                     }
+
+
                 }
             }
             // Clustering End

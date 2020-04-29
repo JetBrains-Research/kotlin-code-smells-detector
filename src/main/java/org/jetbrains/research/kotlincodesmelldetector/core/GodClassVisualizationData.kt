@@ -29,10 +29,7 @@ class GodClassVisualizationData(
         for (function in extractedMethods) {
             for (ktExpression: KtExpression in function.referencesInBody) {
                 if (usedThroughThisReference(ktExpression)) {
-                    if (ktExpression is KtCallExpression && isInvocationToExtractedFunction(
-                            ktExpression,
-                            extractedMethods
-                        ) ||
+                    if (isInvocationToExtractedFunction(ktExpression, extractedMethods) ||
                         isAccessToExtractedProperty(ktExpression, extractedFields)
                     ) {
                         distinctTargetDependencies += 1
@@ -48,9 +45,13 @@ class GodClassVisualizationData(
     }
 
     private fun isInvocationToExtractedFunction(
-        invocation: KtCallExpression,
+        invocation: KtExpression,
         extractedFunctions: Set<KtDeclaration>
     ): Boolean {
+        if (invocation !is KtCallExpression) {
+            return false
+        }
+
         for (method in extractedFunctions) {
             if (method == invocation.mainReference.resolve()) {
                 return true

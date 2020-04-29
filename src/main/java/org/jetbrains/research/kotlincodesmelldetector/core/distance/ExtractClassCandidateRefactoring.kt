@@ -95,9 +95,12 @@ class ExtractClassCandidateRefactoring(
             for (entity in extractedEntities) {
                 val element = entity.element
                 if (element?.isField == true) {
+                    /*
+                    //TODO review change
                     if (!element.hasPrivateModifier()) {
                         return false
                     }
+                     */
                 } else {
                     methodCounter++
 
@@ -121,7 +124,11 @@ class ExtractClassCandidateRefactoring(
 
     private fun KtDeclaration.methodNotExtractable(): Boolean {
         return this.isSynchronized || this.containsSuperMethodInvocation ||
-            this.overridesMethod || this.isAbstract || this.containsFieldAccessOfEnclosingClass
+             this.isAbstract || this.containsFieldAccessOfEnclosingClass
+        /*
+        TODO review changes
+         this.overridesMethod
+         */
     }
 
     private fun KtDeclaration.sourceMethodValid(): Boolean {

@@ -4,6 +4,8 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiElementVisitor
 import com.intellij.psi.SmartPointerManager
 import com.intellij.psi.SmartPsiElementPointer
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithSource
+import org.jetbrains.kotlin.idea.caches.resolve.resolveToDescriptorIfAny
 import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.nj2k.postProcessing.resolve
 import org.jetbrains.kotlin.psi.KtCallExpression
@@ -100,7 +102,7 @@ private val KtDeclaration.correctMethod: Boolean
  */
 val KtElement.isField: Boolean
     get() {
-        if (this is KtParameter) {
+        if (this is KtParameter && this.hasValOrVar()) {
             return true
         }
 
@@ -140,13 +142,14 @@ fun generateFullEntitySets(entities: List<KtElement>): Map<KtElement, Set<PsiEle
                     val resolved = psiElement.mainReference.resolve()
                     resolved?.let { result[entity]?.add(it) }
 
-                    if (resolved is KtPropertyAccessor) {
+                    if (resolved is KtPropertyAccessor && resolved.property.isField) {
                         result[resolved]?.add(entity)
                     }
                 } else if (psiElement is KtReferenceExpression) {
                     val resolved = psiElement.resolve()
-                    if (resolved is KtElement && resolved.isPropertyOrConstructorVar) {
-                        resolved.let { result[entity]?.add(it) }
+
+                    if (resolved is KtElement && resolved.isField) {
+                        result[entity]?.add(resolved)
                         result[resolved]?.add(entity)
                     }
                 }
