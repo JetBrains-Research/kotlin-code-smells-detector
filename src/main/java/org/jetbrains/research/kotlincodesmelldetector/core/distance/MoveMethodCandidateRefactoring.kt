@@ -61,7 +61,7 @@ class MoveMethodCandidateRefactoring(
         }
         val localVariables = sourceMethod.bodyExpression?.collectDescendantsOfType<KtProperty>() ?: emptyList()
         for (variable in localVariables) {
-            if (getConstructorType(variable) == targetClass.signature) {
+            if (getConstructorType(variable) == targetClass.element.fqName) {
                 return false
             }
         }
@@ -69,7 +69,7 @@ class MoveMethodCandidateRefactoring(
         candidateReferences.addAll(sourceMethod.valueParameters)
         candidateReferences.addAll(sourceClass.attributeList)
         for (candidate in candidateReferences) {
-            if (getConstructorType(candidate) == targetClass.signature && candidate.type()?.isMarkedNullable == false) {
+            if (getConstructorType(candidate) == targetClass.element.fqName && candidate.type()?.isMarkedNullable == false) {
                 return true
             }
         }
@@ -81,11 +81,10 @@ class MoveMethodCandidateRefactoring(
         accessedVariables.addAll(sourceMethod.bodyExpression?.collectDescendantsOfType<KtProperty>() ?: emptyList())
         accessedVariables.addAll(sourceMethod.valueParameters)
         accessedVariables.addAll(visualizationData.sourceAccessedMembers.filter { member -> member is KtParameter || member is KtProperty })
-        val targetClassType = targetClass.signature
         for (variable in accessedVariables) {
             val type = getConstructorType(variable)
             type?.let {
-                if (isContainer(type) && getFirstTypeArgumentType(variable) == targetClassType) {
+                if (isContainer(type) && getFirstTypeArgumentType(variable) == targetClass.element.fqName) {
                     return true
                 }
             }

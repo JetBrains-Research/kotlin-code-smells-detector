@@ -3,6 +3,8 @@ package org.jetbrains.research.kotlincodesmelldetector;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.psi.SmartPsiElementPointer;
 import org.jetbrains.kotlin.name.FqName;
+import org.jetbrains.kotlin.psi.KtClass;
+import org.jetbrains.kotlin.psi.KtClassOrObject;
 import org.jetbrains.kotlin.psi.KtFile;
 import org.jetbrains.kotlin.psi.KtElement;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.*;
@@ -40,8 +42,8 @@ public class KotlinCodeSmellFacade {
     public static List<MoveMethodCandidateRefactoring> getMoveMethodRefactoringOpportunities(ProjectInfo project, ProgressIndicator indicator) {
         DistanceMatrix distanceMatrix = new DistanceMatrix(project, indicator);
 
-        Set<String> classNamesToBeExamined = new LinkedHashSet<>();
-        for (Map.Entry<String, ClassEntity> entry: distanceMatrix.getClasses().entrySet()) {
+        Set<KtClassOrObject> classNamesToBeExamined = new LinkedHashSet<>();
+        for (Map.Entry<KtClassOrObject, ClassEntity> entry: distanceMatrix.getClasses().entrySet()) {
             if (!entry.getValue().isEnum() && !entry.getValue().isInterface()) {
                 classNamesToBeExamined.add(entry.getKey());
             }

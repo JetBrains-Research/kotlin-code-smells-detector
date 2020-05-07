@@ -1,5 +1,6 @@
 package org.jetbrains.research.kotlincodesmelldetector.core
 
+import org.jetbrains.kotlin.idea.refactoring.fqName.fqName
 import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.nj2k.postProcessing.type
@@ -13,11 +14,13 @@ import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtSuperExpression
 import org.jetbrains.kotlin.psi.KtThisExpression
 import org.jetbrains.kotlin.psi.psiUtil.forEachDescendantOfType
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ClassEntity
-import org.jetbrains.research.kotlincodesmelldetector.utils.signature
 
-class FeatureEnvyVisualizationData(private val sourceClass: ClassEntity, val methodToBeMoved: KtNamedFunction, private val targetClass: ClassEntity) : VisualizationData {
+class FeatureEnvyVisualizationData(
+        private val sourceClass: ClassEntity,
+        val methodToBeMoved: KtNamedFunction,
+        private val targetClass: ClassEntity
+) : VisualizationData {
     override val distinctSourceDependencies: Int
     override val distinctTargetDependencies: Int
     val sourceAssignments: Int
@@ -49,8 +52,9 @@ class FeatureEnvyVisualizationData(private val sourceClass: ClassEntity, val met
                                         receiverExpression
                                     }
                             receiver?.mainReference?.resolve()?.let { resolvedReceiver ->
-                                if (resolvedReceiver is KtNamedDeclaration && (resolvedReceiver.type()?.constructor?.declarationDescriptor?.fqNameOrNull()?.asString()
-                                                == targetClass.signature || resolvedReceiver.signature == targetClass.signature)) {
+                                if (resolvedReceiver is KtNamedDeclaration
+                                        && (resolvedReceiver.type()?.fqName == targetClass.element.fqName
+                                                || resolvedReceiver.fqName == targetClass.element.fqName)) {
                                     handlePossibleTargetMember(expression)
                                 }
                             }
