@@ -271,7 +271,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
      * Calculates suggestions for whole project.
      */
     private void calculateRefactorings() {
-        ProjectInfo projectInfo = new ProjectInfo(scope.getProject());
+        ProjectInfo projectInfo = new ProjectInfo(scope);
 
         final Task.Backgroundable backgroundable = new Task.Backgroundable(scope.getProject(),
                 KotlinCodeSmellDetectorBundle.message(detectIndicatorStatusTextKey), true) {

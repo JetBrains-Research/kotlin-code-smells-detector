@@ -1,10 +1,14 @@
 package org.jetbrains.research.kotlincodesmelldetector.ide.ui
 
 import com.intellij.analysis.AnalysisScope
+import com.intellij.analysis.AnalysisUIOptions
+import com.intellij.analysis.BaseAnalysisActionDialog
+import com.intellij.icons.AllIcons
 import com.intellij.ide.util.EditorHelper
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task.Backgroundable
+import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
 import com.intellij.ui.JBColor
 import com.intellij.ui.ScrollPaneFactory
@@ -20,8 +24,8 @@ import org.jetbrains.research.kotlincodesmelldetector.core.distance.ProjectInfo
 import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.moveMethod.MoveMethodRefactoring
 import org.jetbrains.research.kotlincodesmelldetector.ide.ui.listeners.DoubleClickListener
 import java.awt.BorderLayout
+import java.awt.Dimension
 import java.awt.FlowLayout
-import java.awt.event.ActionEvent
 import java.awt.event.InputEvent
 import java.util.*
 import java.util.stream.Collectors
@@ -30,10 +34,15 @@ import javax.swing.*
 /**
  * Panel for Move Method refactoring.
  */
-internal class MoveMethodPanel(private val scope: AnalysisScope) : JPanel() {
+internal class MoveMethodPanel(private val project: Project) : JPanel() {
     private val model: MoveMethodTableModel
+    private val defaultScope = AnalysisScope(project)
+    private var customScope = defaultScope
     private val table = JBTable()
     private val refreshButton = JButton()
+    private val scopeButton = JButton(AllIcons.General.ProjectConfigurable)
+    private val selectAllButton = JButton(AllIcons.Actions.Selectall)
+    private val deselectAllButton = JButton(AllIcons.Actions.Unselectall)
     private val refactorings: MutableList<MoveMethodRefactoring> = ArrayList()
     private var scrollPane: JScrollPane = JBScrollPane()
     private val refreshLabel = JLabel(
@@ -44,6 +53,24 @@ internal class MoveMethodPanel(private val scope: AnalysisScope) : JPanel() {
     private fun setupGUI() {
         add(createTablePanel(), BorderLayout.CENTER)
         add(createButtonsPanel(), BorderLayout.SOUTH)
+        add(createToolBar(), BorderLayout.EAST)
+    }
+
+    private fun createToolBar(): JToolBar {
+        val toolBar = JToolBar(JToolBar.VERTICAL)
+        toolBar.isFloatable = false
+        scopeButton.preferredSize = Dimension(30, 30)
+        selectAllButton.preferredSize = Dimension(30, 30)
+        deselectAllButton.preferredSize = Dimension(30, 30)
+        scopeButton.toolTipText = KotlinCodeSmellDetectorBundle.message("specify.scope.button")
+        selectAllButton.toolTipText = KotlinCodeSmellDetectorBundle.message("select.all.button")
+        deselectAllButton.toolTipText = KotlinCodeSmellDetectorBundle.message("deselect.all.button")
+        scopeButton.addActionListener { specifyScope() }
+        toolBar.add(scopeButton)
+        toolBar.add(selectAllButton)
+        toolBar.add(deselectAllButton)
+        return toolBar
+
     }
 
     private fun createTablePanel(): JScrollPane {
@@ -96,9 +123,21 @@ internal class MoveMethodPanel(private val scope: AnalysisScope) : JPanel() {
         calculateRefactorings()
     }
 
+    private fun specifyScope() {
+        val options = AnalysisUIOptions.getInstance(project)
+        val items = BaseAnalysisActionDialog.standardItems(project, defaultScope, null, null)
+        val dialog = BaseAnalysisActionDialog("Specify " + KotlinCodeSmellDetectorBundle.message("feature.envy.scope.title"), KotlinCodeSmellDetectorBundle.message("feature.envy.scope.title"),
+                project, items, options, true, false)
+        ApplicationManager.getApplication().invokeLater {
+            dialog.show()
+            if (dialog.isOK) {
+                customScope = dialog.getScope(defaultScope)
+            }
+        }
+    }
+
     private fun calculateRefactorings() {
-        val project = scope.project
-        val projectInfo = ProjectInfo(project)
+        val projectInfo = ProjectInfo(customScope)
         val backgroundable: Backgroundable = object : Backgroundable(project, KotlinCodeSmellDetectorBundle.message("feature.envy.detect.indicator.status"), true) {
             override fun run(indicator: ProgressIndicator) {
                 ApplicationManager.getApplication().runReadAction {
@@ -139,7 +178,7 @@ internal class MoveMethodPanel(private val scope: AnalysisScope) : JPanel() {
         if (selectedRow == -1 || selectedColumn == -1 || selectedColumn == MoveMethodTableModel.SELECTION_COLUMN_INDEX) {
             return
         }
-        openDefinition(model.getUnitAt(selectedRow, selectedColumn).orElse(null), scope)
+        openDefinition(model.getUnitAt(selectedRow, selectedColumn).orElse(null), defaultScope)
     }
 
     companion object {

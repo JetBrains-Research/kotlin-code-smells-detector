@@ -23,9 +23,43 @@ open class MethodCanBeMovedSource(private val target: MethodCanBeMovedTarget) {
             localTarget.f2()
         }
     }
+
+    fun methodWithNullableReferenceToTargetClass(target: MethodCanBeMovedNullableTarget?) {
+        target?.f1()
+        target?.f2()
+    }
+
+    fun methodAccessesOnlyMembersOfCompanion() {
+        MethodCanBeMovedTarget.f3()
+        MethodCanBeMovedTarget.f4()
+    }
+
+    fun methodAccessesDataClassWithMethod(dataClass: DataClassWithMethod) {
+        dataClass.firstField += dataClass.secondField
+    }
+
+    fun methodAccessesDataClassWithoutMethod(dataClass: DataClassWithoutMethod) {
+        dataClass.firstField += dataClass.secondField
+    }
 }
 
 class MethodCanBeMovedTarget(val firstField: Int, val secondField: Int) {
+    companion object {
+        fun f3() {}
+        fun f4() {}
+    }
+
     fun f1() {}
     fun f2() {}
 }
+
+class MethodCanBeMovedNullableTarget(val firstField: Int, val secondField: Int) {
+    fun f1() {}
+    fun f2() {}
+}
+
+data class DataClassWithMethod(var firstField: Int, var secondField: Int) {
+    fun f() {}
+}
+
+data class DataClassWithoutMethod(var firstField: Int, var secondField: Int)
