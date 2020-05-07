@@ -96,7 +96,11 @@ class ExtractClassCandidateRefactoring(
                 val element = entity.element
                 if (element?.isField == true) {
                     /*
-                    //TODO review change
+                    TODO there was check of privateModifier for property. We probably shouldn't care about this and
+                     just leave a delegate in such case
+                    */
+
+                    /*
                     if (!element.hasPrivateModifier()) {
                         return false
                     }
@@ -126,7 +130,9 @@ class ExtractClassCandidateRefactoring(
         return this.isSynchronized || this.containsSuperMethodInvocation ||
              this.isAbstract || this.containsFieldAccessOfEnclosingClass
         /*
-        TODO review changes
+        TODO there was a check for overriden method. Probably we shoudln't care about this, because we can just leave a delegate
+        for such a case.
+
          this.overridesMethod
          */
     }

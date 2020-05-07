@@ -13,8 +13,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GodClassTreeTableModel extends AbstractTreeTableModel {
+    private boolean debugMode = false;
+
     public GodClassTreeTableModel(List<AbstractCandidateRefactoringGroup> candidateRefactoringGroups, String[] columnNames) {
         super(candidateRefactoringGroups, columnNames, new ExtractClassRefactoringType());
+    }
+
+    public GodClassTreeTableModel(List<AbstractCandidateRefactoringGroup> candidateRefactoringGroups, String[] columnNames, boolean debugMode) {
+        super(candidateRefactoringGroups, columnNames, new ExtractClassRefactoringType());
+        this.debugMode = debugMode;
     }
 
     @Override
@@ -36,14 +43,18 @@ public class GodClassTreeTableModel extends AbstractTreeTableModel {
                 case 0:
                     return "";
                 case 1:
-                    return candidateRefactoring.getSourceEntity().getElement().getName()
-                            + "___"
-                            + (candidateRefactoring.isApplicable() ? "OK" : "NO")
-                            + "___"
-                            + (candidateRefactoring.getDistinctSourceDependencies() + "   " + candidateRefactoring.getDistinctTargetDependencies())
-                            + "___"
-                            + (candidateRefactoring.getDistinctSourceDependencies() <= 2 &&
-                            candidateRefactoring.getDistinctSourceDependencies() < candidateRefactoring.getDistinctTargetDependencies());
+                    if (!debugMode) {
+                        return candidateRefactoring.getSourceEntity().getElement().getName();
+                    } else {
+                        return candidateRefactoring.getSourceEntity().getElement().getName()
+                                + "___"
+                                + (candidateRefactoring.isApplicable() ? "OK" : "NO")
+                                + "___"
+                                + (candidateRefactoring.getDistinctSourceDependencies() + "   " + candidateRefactoring.getDistinctTargetDependencies())
+                                + "___"
+                                + (candidateRefactoring.getDistinctSourceDependencies() <= 2 &&
+                                candidateRefactoring.getDistinctSourceDependencies() < candidateRefactoring.getDistinctTargetDependencies());
+                    }
                 case 2:
                     return candidateRefactoring.getExtractedFields().size() + "/" + candidateRefactoring.getExtractedMethods().size();
             }

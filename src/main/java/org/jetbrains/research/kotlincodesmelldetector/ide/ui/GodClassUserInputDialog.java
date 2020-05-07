@@ -3,6 +3,7 @@ package org.jetbrains.research.kotlincodesmelldetector.ide.ui;
 import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiNameHelper;
 import com.intellij.psi.PsiPackage;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.refactoring.RefactorJBundle;
@@ -120,11 +121,10 @@ public class GodClassUserInputDialog extends RefactoringDialog {
             mayApplyRefactoring(false);
             setMessage(KotlinCodeSmellDetectorBundle.message("god.class.dialog.class.name.already.exists", parentPackage.getName()));
             return;
-        } else if (false) {
-            //TODO check if class name consist in kotlin/java default libraries
         } else {
             refactoring.setExtractedClassName(className);
         }
+        //TODO add checks on keywords / identifiers
 
         mayApplyRefactoring(true);
         setMessage("");

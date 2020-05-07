@@ -1,8 +1,10 @@
 package org.jetbrains.research.kotlincodesmelldetector.core.distance
 
 import com.intellij.openapi.progress.ProgressIndicator
+import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.resolve.calls.callUtil.getCall
 import org.jetbrains.research.kotlincodesmelldetector.utils.fields
 import org.jetbrains.research.kotlincodesmelldetector.utils.generateFullEntitySets
 import org.jetbrains.research.kotlincodesmelldetector.utils.math.Clustering
@@ -34,7 +36,8 @@ fun getJaccardDistanceMatrix(entities: List<KtElement>): Array<DoubleArray> {
 fun getExtractClassCandidateRefactorings(
     projectInfo: ProjectInfo,
     classesToBeExamined: List<KtElement>,
-    indicator: ProgressIndicator
+    indicator: ProgressIndicator,
+    debugMode: Boolean = false
 ): List<ExtractClassCandidateRefactoring> {
     val candidateList: MutableList<ExtractClassCandidateRefactoring> = mutableListOf()
 
@@ -56,21 +59,20 @@ fun getExtractClassCandidateRefactorings(
                 val candidate =
                     ExtractClassCandidateRefactoring(projectInfo, sourceClass.toPointer(), cluster.entities)
 
-                candidateList.add(candidate) //TODO remove
+                if (debugMode) {
+                    candidateList.add(candidate)
+                    continue
+                }
+
                 if (candidate.isApplicable) {
                     val sourceClassDependencies = candidate.distinctSourceDependencies
                     val extractedClassDependencies = candidate.distinctTargetDependencies
 
-
-                    //candidateList.add(candidate) //TODO remove
-
                     if (sourceClassDependencies <= maximumNumberOfSourceClassMembersAccessedByExtractClassCandidate &&
                         sourceClassDependencies < extractedClassDependencies
                     ) {
-                        candidateList.add(candidate) //TODO
+                        candidateList.add(candidate)
                     }
-
-
                 }
             }
             // Clustering End

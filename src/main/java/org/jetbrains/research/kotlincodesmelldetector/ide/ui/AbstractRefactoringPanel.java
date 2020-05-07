@@ -20,7 +20,9 @@ import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.MessageType;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.SmartPsiElementPointer;
 import com.intellij.psi.util.PsiModificationTracker;
+import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.ScrollPaneFactory;
 import com.intellij.ui.components.JBPanel;
@@ -31,6 +33,8 @@ import com.intellij.util.messages.MessageBus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.psi.KtDeclaration;
+import org.jetbrains.kotlin.psi.KtElement;
+import org.jetbrains.kotlin.psi.KtFile;
 import org.jetbrains.research.kotlincodesmelldetector.KotlinCodeSmellDetectorBundle;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ProjectInfo;
 import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.RefactoringType;
@@ -100,33 +104,17 @@ public abstract class AbstractRefactoringPanel extends JPanel {
      * Compiles the project and runs the task only if there are no compilation errors.
      */
     private static void runAfterCompilationCheck(ProjectInfo projectInfo, Task task) {
-        //TODO compile check here
         ApplicationManager.getApplication().invokeLater(() -> {
-            ProgressManager.getInstance().run(task);
-            /*
-            List<SmartPsiElementPointer<KtElement>> classes = projectInfo.getClasses();
-
-            if (!classes.isEmpty()) {
-                VirtualFile[] virtualFiles = classes.stream()
-                        .map(classObject -> classObject.getContainingFile().getVirtualFile()).toArray(VirtualFile[]::new);
-                Project project = projectInfo.getProject();
-
-                CompilerManager compilerManager = CompilerManager.getInstance(project);
-                CompileStatusNotification callback = (aborted, errors, warnings, compileContext) -> {
-                    if (errors == 0 && !aborted) {
-                        ProgressManager.getInstance().run(task);
-                    } else {
-                        task.onCancel();
-                        AbstractRefactoringPanel.showCompilationErrorNotification(project);
-                    }
-                };
-                CompileScope compileScope = compilerManager.createFilesCompileScope(virtualFiles);
-                compilerManager.make(compileScope, callback);
-            } else {
-                ProgressManager.getInstance().run(task);
+            for (SmartPsiElementPointer<KtFile> filePointer: projectInfo.getKtFiles()) {
+                KtFile file = filePointer.getElement();
+                if (file != null && PsiTreeUtil.hasErrorElements(file)) {
+                    task.onCancel();
+                    AbstractRefactoringPanel.showCompilationErrorNotification(projectInfo.getProject());
+                    return;
+                }
             }
 
-             */
+            ProgressManager.getInstance().run(task);
         });
     }
 
