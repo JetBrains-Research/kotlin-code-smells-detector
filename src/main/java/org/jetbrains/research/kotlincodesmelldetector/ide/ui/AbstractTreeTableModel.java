@@ -9,8 +9,6 @@ import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.Refactorin
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeNode;
-import java.util.Enumeration;
 import java.util.List;
 
 public abstract class AbstractTreeTableModel extends DefaultTreeModel implements TreeTableModel {

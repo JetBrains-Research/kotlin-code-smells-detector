@@ -2,12 +2,27 @@ package org.jetbrains.research.kotlincodesmelldetector.core.distance
 
 import com.intellij.psi.SmartPsiElementPointer
 import org.jetbrains.kotlin.nj2k.postProcessing.type
-import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.KtNamedDeclaration
+import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtObjectDeclaration
+import org.jetbrains.kotlin.psi.KtParameter
+import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
 import org.jetbrains.research.kotlincodesmelldetector.core.FeatureEnvyVisualizationData
-import org.jetbrains.research.kotlincodesmelldetector.utils.*
+import org.jetbrains.research.kotlincodesmelldetector.utils.getConstructorType
+import org.jetbrains.research.kotlincodesmelldetector.utils.getFirstTypeArgumentType
+import org.jetbrains.research.kotlincodesmelldetector.utils.isContainer
+import org.jetbrains.research.kotlincodesmelldetector.utils.isTestClass
+import org.jetbrains.research.kotlincodesmelldetector.utils.signature
 
-class MoveMethodCandidateRefactoring(val project: ProjectInfo, private val sourceClass: ClassEntity, val targetClass: ClassEntity, val sourceMethod: KtNamedFunction) : CandidateRefactoring(), Comparable<MoveMethodCandidateRefactoring> {
+class MoveMethodCandidateRefactoring(
+    val project: ProjectInfo,
+    private val sourceClass: ClassEntity,
+    val targetClass: ClassEntity,
+    val sourceMethod: KtNamedFunction
+) : CandidateRefactoring(), Comparable<MoveMethodCandidateRefactoring> {
     val visualizationData: FeatureEnvyVisualizationData by lazy {
         FeatureEnvyVisualizationData(sourceClass, sourceMethod, targetClass)
     }
@@ -20,18 +35,16 @@ class MoveMethodCandidateRefactoring(val project: ProjectInfo, private val sourc
         return visualizationData.distinctTargetDependencies
     }
 
-
     override fun compareTo(other: MoveMethodCandidateRefactoring): Int {
         if (distinctSourceDependencies != other.distinctSourceDependencies)
             return distinctSourceDependencies - other.distinctSourceDependencies
         return other.distinctTargetDependencies - distinctTargetDependencies
-
     }
 
     fun isApplicable(): Boolean {
-        return  !targetClass.isInterface && validTargetObject() && !targetClassContainsMethodWithSourceMethodSignature()
-                && !isSourceClassATestClass() && !containsFieldAssignment() && !containsSuperInvocation()
-                && !oneToManyRelationshipWithTargetClass()
+        return !targetClass.isInterface && validTargetObject() && !targetClassContainsMethodWithSourceMethodSignature()
+            && !isSourceClassATestClass() && !containsFieldAssignment() && !containsSuperInvocation()
+            && !oneToManyRelationshipWithTargetClass()
     }
 
     private fun containsFieldAssignment(): Boolean {
@@ -94,7 +107,8 @@ class MoveMethodCandidateRefactoring(val project: ProjectInfo, private val sourc
         return false
     }
 
-    private fun shortMethodName(method: KtNamedFunction) = method.signature?.substringBeforeLast("(")?.substringAfterLast(".")
+    private fun shortMethodName(method: KtNamedFunction) =
+        method.signature?.substringBeforeLast("(")?.substringAfterLast(".")
 
     override fun getTarget(): SmartPsiElementPointer<KtClassOrObject> {
         TODO("Not yet implemented")

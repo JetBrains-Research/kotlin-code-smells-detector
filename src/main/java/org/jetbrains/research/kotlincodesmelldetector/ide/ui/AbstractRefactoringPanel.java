@@ -33,7 +33,6 @@ import com.intellij.util.messages.MessageBus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.psi.KtDeclaration;
-import org.jetbrains.kotlin.psi.KtElement;
 import org.jetbrains.kotlin.psi.KtFile;
 import org.jetbrains.research.kotlincodesmelldetector.KotlinCodeSmellDetectorBundle;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ProjectInfo;
@@ -105,7 +104,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
      */
     private static void runAfterCompilationCheck(ProjectInfo projectInfo, Task task) {
         ApplicationManager.getApplication().invokeLater(() -> {
-            for (SmartPsiElementPointer<KtFile> filePointer: projectInfo.getKtFiles()) {
+            for (SmartPsiElementPointer<KtFile> filePointer : projectInfo.getKtFiles()) {
                 KtFile file = filePointer.getElement();
                 if (file != null && PsiTreeUtil.hasErrorElements(file)) {
                     task.onCancel();

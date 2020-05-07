@@ -27,9 +27,17 @@ import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.FlowLayout
 import java.awt.event.InputEvent
-import java.util.*
+import java.util.ArrayList
+import java.util.Objects
 import java.util.stream.Collectors
-import javax.swing.*
+import javax.swing.JButton
+import javax.swing.JComponent
+import javax.swing.JLabel
+import javax.swing.JPanel
+import javax.swing.JScrollPane
+import javax.swing.JToolBar
+import javax.swing.ListSelectionModel
+import javax.swing.SwingConstants
 
 /**
  * Panel for Move Method refactoring.
@@ -46,8 +54,8 @@ internal class MoveMethodPanel(private val project: Project) : JPanel() {
     private val refactorings: MutableList<MoveMethodRefactoring> = ArrayList()
     private var scrollPane: JScrollPane = JBScrollPane()
     private val refreshLabel = JLabel(
-            KotlinCodeSmellDetectorBundle.message("press.refresh.to.find.refactoring.opportunities"),
-            SwingConstants.CENTER
+        KotlinCodeSmellDetectorBundle.message("press.refresh.to.find.refactoring.opportunities"),
+        SwingConstants.CENTER
     )
 
     private fun setupGUI() {
@@ -70,7 +78,6 @@ internal class MoveMethodPanel(private val project: Project) : JPanel() {
         toolBar.add(selectAllButton)
         toolBar.add(deselectAllButton)
         return toolBar
-
     }
 
     private fun createTablePanel(): JScrollPane {
@@ -126,8 +133,15 @@ internal class MoveMethodPanel(private val project: Project) : JPanel() {
     private fun specifyScope() {
         val options = AnalysisUIOptions.getInstance(project)
         val items = BaseAnalysisActionDialog.standardItems(project, defaultScope, null, null)
-        val dialog = BaseAnalysisActionDialog("Specify " + KotlinCodeSmellDetectorBundle.message("feature.envy.scope.title"), KotlinCodeSmellDetectorBundle.message("feature.envy.scope.title"),
-                project, items, options, true, false)
+        val dialog = BaseAnalysisActionDialog(
+            "Specify " + KotlinCodeSmellDetectorBundle.message("feature.envy.scope.title"),
+            KotlinCodeSmellDetectorBundle.message("feature.envy.scope.title"),
+            project,
+            items,
+            options,
+            true,
+            false
+        )
         ApplicationManager.getApplication().invokeLater {
             dialog.show()
             if (dialog.isOK) {
@@ -138,16 +152,23 @@ internal class MoveMethodPanel(private val project: Project) : JPanel() {
 
     private fun calculateRefactorings() {
         val projectInfo = ProjectInfo(customScope)
-        val backgroundable: Backgroundable = object : Backgroundable(project, KotlinCodeSmellDetectorBundle.message("feature.envy.detect.indicator.status"), true) {
+        val backgroundable: Backgroundable = object : Backgroundable(
+            project,
+            KotlinCodeSmellDetectorBundle.message("feature.envy.detect.indicator.status"),
+            true
+        ) {
             override fun run(indicator: ProgressIndicator) {
                 ApplicationManager.getApplication().runReadAction {
                     val candidates = KotlinCodeSmellFacade.getMoveMethodRefactoringOpportunities(projectInfo, indicator)
-                    val references = candidates.stream().filter { obj: MoveMethodCandidateRefactoring? -> Objects.nonNull(obj) }
+                    val references =
+                        candidates.stream().filter { obj: MoveMethodCandidateRefactoring? -> Objects.nonNull(obj) }
                             .map { candidate: MoveMethodCandidateRefactoring ->
-                                MoveMethodRefactoring(candidate.sourceMethod,
-                                        candidate.targetClass.element,
-                                        candidate.distinctSourceDependencies,
-                                        candidate.distinctTargetDependencies)
+                                MoveMethodRefactoring(
+                                    candidate.sourceMethod,
+                                    candidate.targetClass.element,
+                                    candidate.distinctSourceDependencies,
+                                    candidate.distinctTargetDependencies
+                                )
                             }
                             .collect(Collectors.toList())
                     refactorings.clear()

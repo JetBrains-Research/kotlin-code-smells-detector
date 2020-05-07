@@ -3,7 +3,6 @@ package org.jetbrains.research.kotlincodesmelldetector.ide.ui;
 import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiNameHelper;
 import com.intellij.psi.PsiPackage;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.refactoring.RefactorJBundle;

@@ -1,10 +1,8 @@
 package org.jetbrains.research.kotlincodesmelldetector.core.distance
 
 import com.intellij.openapi.progress.ProgressIndicator
-import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtElement
-import org.jetbrains.kotlin.resolve.calls.callUtil.getCall
 import org.jetbrains.research.kotlincodesmelldetector.utils.fields
 import org.jetbrains.research.kotlincodesmelldetector.utils.generateFullEntitySets
 import org.jetbrains.research.kotlincodesmelldetector.utils.math.Clustering
@@ -12,6 +10,8 @@ import org.jetbrains.research.kotlincodesmelldetector.utils.methods
 import org.jetbrains.research.kotlincodesmelldetector.utils.toPointer
 
 private const val maximumNumberOfSourceClassMembersAccessedByExtractClassCandidate = 2
+
+var debugMode = false
 
 fun getJaccardDistanceMatrix(entities: List<KtElement>): Array<DoubleArray> {
     val jaccardDistanceMatrix =
@@ -36,8 +36,7 @@ fun getJaccardDistanceMatrix(entities: List<KtElement>): Array<DoubleArray> {
 fun getExtractClassCandidateRefactorings(
     projectInfo: ProjectInfo,
     classesToBeExamined: List<KtElement>,
-    indicator: ProgressIndicator,
-    debugMode: Boolean = false
+    indicator: ProgressIndicator
 ): List<ExtractClassCandidateRefactoring> {
     val candidateList: MutableList<ExtractClassCandidateRefactoring> = mutableListOf()
 

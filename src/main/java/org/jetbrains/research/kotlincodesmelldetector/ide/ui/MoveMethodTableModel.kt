@@ -4,12 +4,12 @@ import com.intellij.ui.BooleanTableCellRenderer
 import com.intellij.ui.JBColor
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtElement
-import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.research.kotlincodesmelldetector.KotlinCodeSmellDetectorBundle
 import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.moveMethod.MoveMethodRefactoring
 import org.jetbrains.research.kotlincodesmelldetector.utils.signature
 import java.awt.Component
-import java.util.*
+import java.util.ArrayList
+import java.util.Optional
 import java.util.function.Consumer
 import java.util.stream.Collectors
 import java.util.stream.IntStream
@@ -62,9 +62,9 @@ internal class MoveMethodTableModel(refactorings: List<MoveMethodRefactoring>) :
 
     fun pullSelected(): List<MoveMethodRefactoring> {
         return virtualRows.stream()
-                .filter { i: Int? -> isSelected[i!!] && refactorings[i].optionalMethod.isPresent }
-                .map { index: Int? -> refactorings[index!!] }
-                .collect(Collectors.toList())
+            .filter { i: Int? -> isSelected[i!!] && refactorings[i].optionalMethod.isPresent }
+            .map { index: Int? -> refactorings[index!!] }
+            .collect(Collectors.toList())
     }
 
     override fun getColumnCount(): Int {
@@ -120,7 +120,8 @@ internal class MoveMethodTableModel(refactorings: List<MoveMethodRefactoring>) :
             }
             MOVE_TO_COLUMN_INDEX -> {
                 val targetClass = refactorings[rowIndex].optionalTargetClass
-                return targetClass.map { ktClassOrObject: KtClassOrObject -> ktClassOrObject.signature }.orElseGet { KotlinCodeSmellDetectorBundle.message("target.class.is.not.valid") }
+                return targetClass.map { ktClassOrObject: KtClassOrObject -> ktClassOrObject.signature }
+                    .orElseGet { KotlinCodeSmellDetectorBundle.message("target.class.is.not.valid") }
             }
             ACCESSED_MEMBERS_COUNT_INDEX -> return refactorings[rowIndex].sourceAccessedMembers.toString() + "/" + refactorings[rowIndex].targetAccessedMembers
         }
@@ -139,8 +140,10 @@ internal class MoveMethodTableModel(refactorings: List<MoveMethodRefactoring>) :
     fun setupRenderer(table: JTable) {
         table.setDefaultRenderer(Boolean::class.java, object : BooleanTableCellRenderer() {
             private val EMPTY_LABEL = JLabel()
-            override fun getTableCellRendererComponent(table: JTable, value: Any, isSel: Boolean, hasFocus: Boolean,
-                                                       row: Int, column: Int): Component {
+            override fun getTableCellRendererComponent(
+                table: JTable, value: Any, isSel: Boolean, hasFocus: Boolean,
+                row: Int, column: Int
+            ): Component {
                 val realRow = virtualRows[table.convertRowIndexToModel(row)]
                 return if (refactorings[realRow].optionalMethod.isPresent) {
                     super.getTableCellRendererComponent(table, value, isSel, hasFocus, row, column)
@@ -155,8 +158,10 @@ internal class MoveMethodTableModel(refactorings: List<MoveMethodRefactoring>) :
             }
         })
         table.setDefaultRenderer(String::class.java, object : DefaultTableCellRenderer() {
-            override fun getTableCellRendererComponent(table: JTable, value: Any, isSelected: Boolean,
-                                                       hasFocus: Boolean, virtualRow: Int, column: Int): Component {
+            override fun getTableCellRendererComponent(
+                table: JTable, value: Any, isSelected: Boolean,
+                hasFocus: Boolean, virtualRow: Int, column: Int
+            ): Component {
                 val row = virtualRows[table.convertRowIndexToModel(virtualRow)]
                 background = if (!refactorings[row].optionalMethod.isPresent) {
                     JBColor.LIGHT_GRAY

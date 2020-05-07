@@ -1,7 +1,6 @@
 package org.jetbrains.research.kotlincodesmelldetector.core.distance
 
 import com.intellij.psi.SmartPsiElementPointer
-import org.jetbrains.kotlin.idea.util.hasPrivateModifier
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtElement
@@ -20,7 +19,6 @@ import org.jetbrains.research.kotlincodesmelldetector.utils.isField
 import org.jetbrains.research.kotlincodesmelldetector.utils.isMethod
 import org.jetbrains.research.kotlincodesmelldetector.utils.isSynchronized
 import org.jetbrains.research.kotlincodesmelldetector.utils.methods
-import org.jetbrains.research.kotlincodesmelldetector.utils.overridesMethod
 import java.util.ArrayList
 import java.util.LinkedHashMap
 import java.util.LinkedHashSet
@@ -128,7 +126,7 @@ class ExtractClassCandidateRefactoring(
 
     private fun KtDeclaration.methodNotExtractable(): Boolean {
         return this.isSynchronized || this.containsSuperMethodInvocation ||
-             this.isAbstract || this.containsFieldAccessOfEnclosingClass
+            this.isAbstract || this.containsFieldAccessOfEnclosingClass
         /*
         TODO there was a check for overriden method. Probably we shoudln't care about this, because we can just leave a delegate
         for such a case.

@@ -1,7 +1,5 @@
 package org.jetbrains.research.kotlincodesmelldetector.utils
 
-import org.jetbrains.kotlin.idea.references.mainReference
-import org.jetbrains.kotlin.j2k.getContainingClass
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtDeclaration
