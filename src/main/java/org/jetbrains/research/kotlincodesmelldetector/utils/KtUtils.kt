@@ -177,23 +177,29 @@ fun generateFullEntitySets(entities: List<KtElement>): Map<KtElement, Set<PsiEle
     return result
 }
 
+val KtExpression.resolveToElement: PsiElement?
+    get() {
+        return when (this) {
+            is KtCallExpression -> {
+                calleeExpression?.mainReference?.resolve()
+            }
+
+            is KtReferenceExpression -> {
+                mainReference.resolve()
+            }
+
+            else -> {
+                null
+            }
+        }
+    }
+
 /**
  * Checks access to the same object, meaning both `this.field` and `field` are ok
  */
 fun usedThroughThisReference(ktExpression: KtExpression): Boolean {
     //TODO test
-    val resolvedElement =
-        when (ktExpression) {
-            is KtCallExpression -> {
-                ktExpression.calleeExpression?.mainReference?.resolve() ?: return false
-            }
-            is KtReferenceExpression -> {
-                ktExpression.mainReference.resolve() ?: return false
-            }
-            else -> {
-                return false
-            }
-        }
+    val resolvedElement = ktExpression.resolveToElement
 
     return when {
         resolvedElement !is KtFunction && resolvedElement !is KtProperty && resolvedElement !is KtParameter -> {
