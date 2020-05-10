@@ -35,6 +35,7 @@ class DistanceMatrix(private val project: ProjectInfo, private val indicator: Pr
 
     private fun generateEntitySets() {
         indicator.text = KotlinCodeSmellDetectorBundle.message("feature.envy.parsing.indicator")
+        indicator.isIndeterminate = false
         for ((i, pointer) in project.classes.withIndex()) {
             indicator.fraction = i.toDouble() / (2 * project.classes.size)
             val classOrObject = pointer.element as? KtClassOrObject ?: continue

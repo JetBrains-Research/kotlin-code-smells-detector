@@ -1,11 +1,14 @@
 package org.jetbrains.research.kotlincodesmelldetector.ide.ui;
 
 import com.intellij.analysis.AnalysisScope;
+import com.intellij.icons.AllIcons;
 import com.intellij.ide.util.EditorHelper;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationDisplayType;
 import com.intellij.notification.NotificationGroup;
 import com.intellij.notification.Notifications;
+import com.intellij.openapi.actionSystem.*;
+import com.intellij.openapi.actionSystem.impl.ActionButton;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.colors.EditorColors;
@@ -59,9 +62,10 @@ public abstract class AbstractRefactoringPanel extends JPanel {
     protected final AnalysisScope scope;
     private final AbstractTreeTableModel model;
     private final TreeTable treeTable;
-    private final JButton doRefactorButton = new JButton();
-    private final JButton refreshButton = new JButton();
-    private final JButton exportButton = new JButton();
+    private final ActionButton doRefactorButton;
+    private final ActionButton refreshButton;
+    private final ActionButton exportButton;
+    private final ScopeChooserComboBox scopeChooserComboBox;
     private JScrollPane scrollPane = new JBScrollPane();
     private final JLabel refreshLabel = new JLabel(
             KotlinCodeSmellDetectorBundle.message("press.refresh.to.find.refactoring.opportunities"),
@@ -82,6 +86,10 @@ public abstract class AbstractRefactoringPanel extends JPanel {
         this.model = model;
         this.treeTable = new TreeTable(model);
         this.refactorDepth = refactorDepth;
+        this.doRefactorButton = new ActionButton(refactorAction(), new Presentation(KotlinCodeSmellDetectorBundle.message("refactor.button")), BorderLayout.EAST, new Dimension(26, 24));
+        this.refreshButton = new ActionButton(refreshAction(), new Presentation(KotlinCodeSmellDetectorBundle.message("refresh.button")), BorderLayout.EAST, new Dimension(26, 24));
+        this.exportButton = new ActionButton(exportAction(), new Presentation(KotlinCodeSmellDetectorBundle.message("export")), BorderLayout.EAST, new Dimension(26, 24));
+        this.scopeChooserComboBox = new ScopeChooserComboBox(scope);
         refreshLabel.setForeground(JBColor.GRAY);
         setLayout(new BorderLayout());
         setupGUI();
@@ -119,7 +127,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
 
     private void setupGUI() {
         add(createTablePanel(), BorderLayout.CENTER);
-        add(createButtonPanel(), BorderLayout.SOUTH);
+        add(createToolbar(), BorderLayout.NORTH);
         registerPsiModificationListener();
         showRefreshingProposal();
     }
@@ -135,8 +143,6 @@ public abstract class AbstractRefactoringPanel extends JPanel {
         removeSelection();
         scrollPane.setVisible(true);
         model.reload();
-        exportButton.setEnabled(!model.getCandidateRefactoringGroups().isEmpty());
-        refreshButton.setEnabled(true);
         scrollPane.setViewportView(treeTable);
     }
 
@@ -149,9 +155,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
             errorNotification.expire();
         }
         scrollPane.setVisible(true);
-        exportButton.setEnabled(false);
         scrollPane.setViewportView(refreshLabel);
-        refreshButton.setEnabled(true);
     }
 
     /**
@@ -159,8 +163,6 @@ public abstract class AbstractRefactoringPanel extends JPanel {
      */
     private void showEmptyPanel() {
         removeSelection();
-        exportButton.setEnabled(false);
-        refreshButton.setEnabled(false);
         scrollPane.setVisible(false);
     }
 
@@ -192,25 +194,17 @@ public abstract class AbstractRefactoringPanel extends JPanel {
      *
      * @return panel with buttons.
      */
-    private JComponent createButtonPanel() {
-        final JPanel panel = new JPanel(new BorderLayout());
-        final JPanel buttonPanel = new JBPanel<JBPanel<JBPanel>>();
-        buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT));
-
-        doRefactorButton.setText(KotlinCodeSmellDetectorBundle.message("refactor.button"));
-        doRefactorButton.setEnabled(false);
-        doRefactorButton.addActionListener(l -> refactorSelected());
-        buttonPanel.add(doRefactorButton);
-
-        refreshButton.setText(KotlinCodeSmellDetectorBundle.message("refresh.button"));
-        refreshButton.addActionListener(l -> refreshPanel());
-        buttonPanel.add(refreshButton);
-
-        exportButton.setText(KotlinCodeSmellDetectorBundle.message("export"));
-        buttonPanel.add(exportButton);
-
-        panel.add(buttonPanel, BorderLayout.EAST);
-        return panel;
+    private JPanel createToolbar() {
+        DefaultActionGroup actionGroup = new DefaultActionGroup();
+        actionGroup.add(doRefactorButton.getAction());
+        actionGroup.add(refreshButton.getAction());
+        actionGroup.add(exportButton.getAction());
+        ActionToolbar toolbar = ActionManager.getInstance().createActionToolbar(ActionPlaces.MAIN_TOOLBAR, actionGroup, true);
+        JPanel buttonsPanel = new JPanel(new BorderLayout());
+        buttonsPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+        buttonsPanel.add(scopeChooserComboBox);
+        buttonsPanel.add(toolbar.getComponent());
+        return buttonsPanel;
     }
 
     /**
@@ -397,5 +391,34 @@ public abstract class AbstractRefactoringPanel extends JPanel {
     public static void showCompilationErrorNotification(Project project) {
         errorNotification = NOTIFICATION_GROUP.createNotification(KotlinCodeSmellDetectorBundle.message("compilation.error.notification.text"), MessageType.ERROR);
         Notifications.Bus.notify(errorNotification, project);
+    }
+    private AnAction refactorAction() {
+        return new AnAction(KotlinCodeSmellDetectorBundle.message("refactor.button"), null, AllIcons.Actions.RefactoringBulb) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) { refactorSelected(); }
+
+            @Override
+            public void update(@NotNull AnActionEvent e) { e.getPresentation().setEnabled(false); }
+        };
+    }
+    private AnAction refreshAction() {
+        return new AnAction(KotlinCodeSmellDetectorBundle.message("refresh.button"), null, AllIcons.Actions.Refresh) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) { refreshPanel(); }
+
+            @Override
+            public void update(@NotNull AnActionEvent e) { e.getPresentation().setEnabled(scrollPane.isVisible()); }
+        };
+    }
+    private AnAction exportAction() {
+        return new AnAction(KotlinCodeSmellDetectorBundle.message("export"), null, AllIcons.ToolbarDecorator.Export) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) {}
+
+            @Override
+            public void update(@NotNull AnActionEvent e) {
+                e.getPresentation().setEnabled(scrollPane.isVisible() && !model.getCandidateRefactoringGroups().isEmpty());
+            }
+        };
     }
 }

@@ -1,19 +1,19 @@
 package org.jetbrains.research.kotlincodesmelldetector.ide.ui
 
 import com.intellij.analysis.AnalysisScope
-import com.intellij.analysis.AnalysisUIOptions
-import com.intellij.analysis.BaseAnalysisActionDialog
 import com.intellij.icons.AllIcons
 import com.intellij.ide.util.EditorHelper
+import com.intellij.openapi.actionSystem.*
+import com.intellij.openapi.actionSystem.impl.ActionButton
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task.Backgroundable
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.psi.PsiElement
 import com.intellij.ui.JBColor
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TableSpeedSearch
-import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.table.JBTable
 import org.jetbrains.kotlin.psi.KtElement
@@ -27,57 +27,51 @@ import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.FlowLayout
 import java.awt.event.InputEvent
-import java.util.ArrayList
-import java.util.Objects
+import java.util.*
 import java.util.stream.Collectors
-import javax.swing.JButton
-import javax.swing.JComponent
-import javax.swing.JLabel
-import javax.swing.JPanel
-import javax.swing.JScrollPane
-import javax.swing.JToolBar
-import javax.swing.ListSelectionModel
-import javax.swing.SwingConstants
+import javax.swing.*
 
 /**
  * Panel for Move Method refactoring.
  */
-internal class MoveMethodPanel(private val project: Project) : JPanel() {
+internal class MoveMethodPanel(private val project: Project) : SimpleToolWindowPanel(false) {
     private val model: MoveMethodTableModel
-    private val defaultScope = AnalysisScope(project)
-    private var customScope = defaultScope
     private val table = JBTable()
-    private val refreshButton = JButton()
-    private val scopeButton = JButton(AllIcons.General.ProjectConfigurable)
-    private val selectAllButton = JButton(AllIcons.Actions.Selectall)
-    private val deselectAllButton = JButton(AllIcons.Actions.Unselectall)
+    private val refactorButton: ActionButton
+    private val refreshButton: ActionButton
+    private val exportButton: ActionButton
+    private val selectButton: ActionButton
+    private val deselectButton: ActionButton
+    private val scopeChooserComboBox: ScopeChooserComboBox
+
     private val refactorings: MutableList<MoveMethodRefactoring> = ArrayList()
     private var scrollPane: JScrollPane = JBScrollPane()
     private val refreshLabel = JLabel(
         KotlinCodeSmellDetectorBundle.message("press.refresh.to.find.refactoring.opportunities"),
         SwingConstants.CENTER
     )
+    private val defaultScope = AnalysisScope(project)
+    private var enableButtons = true
 
     private fun setupGUI() {
         add(createTablePanel(), BorderLayout.CENTER)
-        add(createButtonsPanel(), BorderLayout.SOUTH)
-        add(createToolBar(), BorderLayout.EAST)
+        add(createToolbar(), BorderLayout.NORTH)
     }
 
-    private fun createToolBar(): JToolBar {
-        val toolBar = JToolBar(JToolBar.VERTICAL)
-        toolBar.isFloatable = false
-        scopeButton.preferredSize = Dimension(30, 30)
-        selectAllButton.preferredSize = Dimension(30, 30)
-        deselectAllButton.preferredSize = Dimension(30, 30)
-        scopeButton.toolTipText = KotlinCodeSmellDetectorBundle.message("specify.scope.button")
-        selectAllButton.toolTipText = KotlinCodeSmellDetectorBundle.message("select.all.button")
-        deselectAllButton.toolTipText = KotlinCodeSmellDetectorBundle.message("deselect.all.button")
-        scopeButton.addActionListener { specifyScope() }
-        toolBar.add(scopeButton)
-        toolBar.add(selectAllButton)
-        toolBar.add(deselectAllButton)
-        return toolBar
+    private fun createToolbar(): JPanel {
+        val actionGroup = DefaultActionGroup()
+        actionGroup.add(refactorButton.action)
+        actionGroup.add(refreshButton.action)
+        actionGroup.add(exportButton.action)
+        actionGroup.addSeparator()
+        actionGroup.add(selectButton.action)
+        actionGroup.add(deselectButton.action)
+        val toolbar = ActionManager.getInstance().createActionToolbar(ActionPlaces.MAIN_TOOLBAR, actionGroup, true)
+        val buttonsPanel = JPanel(BorderLayout())
+        buttonsPanel.layout = FlowLayout(FlowLayout.LEFT)
+        buttonsPanel.add(scopeChooserComboBox)
+        buttonsPanel.add(toolbar.component)
+        return buttonsPanel
     }
 
     private fun createTablePanel(): JScrollPane {
@@ -103,55 +97,16 @@ internal class MoveMethodPanel(private val project: Project) : JPanel() {
         dependencies.minWidth = 30
     }
 
-    private fun createButtonsPanel(): JComponent {
-        val panel = JPanel(BorderLayout())
-        val buttonsPanel: JPanel = JBPanel<JBPanel<JBPanel<*>>>()
-        buttonsPanel.layout = FlowLayout(FlowLayout.RIGHT)
-        refreshButton.text = KotlinCodeSmellDetectorBundle.message("refresh.button")
-        refreshButton.addActionListener { refreshPanel() }
-        buttonsPanel.add(refreshButton)
-        panel.add(buttonsPanel, BorderLayout.EAST)
-        return panel
-    }
-
-    private fun enableButtonsOnConditions() {
-        refreshButton.isEnabled = true
-    }
-
-    private fun disableAllButtons() {
-        refreshButton.isEnabled = false
-    }
-
     private fun refreshPanel() {
         refactorings.clear()
         model.clearTable()
-        disableAllButtons()
+        enableButtons = false
         scrollPane.isVisible = false
         calculateRefactorings()
     }
 
-    private fun specifyScope() {
-        val options = AnalysisUIOptions.getInstance(project)
-        val items = BaseAnalysisActionDialog.standardItems(project, defaultScope, null, null)
-        val dialog = BaseAnalysisActionDialog(
-            "Specify " + KotlinCodeSmellDetectorBundle.message("feature.envy.scope.title"),
-            KotlinCodeSmellDetectorBundle.message("feature.envy.scope.title"),
-            project,
-            items,
-            options,
-            true,
-            false
-        )
-        ApplicationManager.getApplication().invokeLater {
-            dialog.show()
-            if (dialog.isOK) {
-                customScope = dialog.getScope(defaultScope)
-            }
-        }
-    }
-
     private fun calculateRefactorings() {
-        val projectInfo = ProjectInfo(customScope)
+        val projectInfo = ProjectInfo(scopeChooserComboBox.getScope())
         val backgroundable: Backgroundable = object : Backgroundable(
             project,
             KotlinCodeSmellDetectorBundle.message("feature.envy.detect.indicator.status"),
@@ -176,7 +131,7 @@ internal class MoveMethodPanel(private val project: Project) : JPanel() {
                     model.updateTable(refactorings)
                     scrollPane.isVisible = true
                     scrollPane.setViewportView(table)
-                    enableButtonsOnConditions()
+                    enableButtons = true
                 }
             }
 
@@ -223,6 +178,53 @@ internal class MoveMethodPanel(private val project: Project) : JPanel() {
     init {
         layout = BorderLayout()
         model = MoveMethodTableModel(refactorings)
+        scopeChooserComboBox = ScopeChooserComboBox(defaultScope)
+        refactorButton = ActionButton(refactorAction(), Presentation(KotlinCodeSmellDetectorBundle.message("refactor.button")), BorderLayout.EAST, Dimension(26, 24))
+        refreshButton = ActionButton(refreshAction(), Presentation(KotlinCodeSmellDetectorBundle.message("refresh.button")), BorderLayout.EAST, Dimension(26, 24))
+        exportButton = ActionButton(exportAction(), Presentation(KotlinCodeSmellDetectorBundle.message("export")), BorderLayout.EAST, Dimension(26, 24))
+        selectButton = ActionButton(selectAllAction(), Presentation(KotlinCodeSmellDetectorBundle.message("select.all.button")), BorderLayout.EAST, Dimension(26, 24))
+        deselectButton = ActionButton(deselectAllAction(), Presentation(KotlinCodeSmellDetectorBundle.message("deselect.all.button")), BorderLayout.EAST, Dimension(26, 24))
         setupGUI()
+    }
+
+    private fun refactorAction(): AnAction = object : AnAction(KotlinCodeSmellDetectorBundle.message("refactor.button"), null, AllIcons.Actions.RefactoringBulb) {
+        // TODO("Not yet implemented")
+        override fun actionPerformed(e: AnActionEvent) {}
+        override fun update(e: AnActionEvent) {
+            e.presentation.isEnabled = false
+        }
+    }
+
+    private fun refreshAction(): AnAction = object : AnAction(KotlinCodeSmellDetectorBundle.message("refresh.button"), null, AllIcons.Actions.Refresh) {
+        override fun actionPerformed(e: AnActionEvent) {
+            refreshPanel()
+        }
+        override fun update(e: AnActionEvent) {
+            e.presentation.isEnabled = enableButtons
+        }
+    }
+
+    private fun exportAction(): AnAction = object : AnAction(KotlinCodeSmellDetectorBundle.message("export"), null, AllIcons.ToolbarDecorator.Export) {
+        // TODO("Not yet implemented")
+        override fun actionPerformed(e: AnActionEvent) {}
+        override fun update(e: AnActionEvent) {
+            e.presentation.isEnabled = false
+        }
+    }
+
+    private fun selectAllAction(): AnAction = object : AnAction(KotlinCodeSmellDetectorBundle.message("select.all.button"), null, AllIcons.Actions.Selectall) {
+        // TODO("Not yet implemented")
+        override fun actionPerformed(e: AnActionEvent) {}
+        override fun update(e: AnActionEvent) {
+            e.presentation.isEnabled = false
+        }
+    }
+
+    private fun deselectAllAction(): AnAction = object : AnAction(KotlinCodeSmellDetectorBundle.message("deselect.all.button"), null, AllIcons.Actions.Unselectall) {
+        // TODO("Not yet implemented")
+        override fun actionPerformed(e: AnActionEvent) {}
+        override fun update(e: AnActionEvent) {
+            e.presentation.isEnabled = false
+        }
     }
 }
