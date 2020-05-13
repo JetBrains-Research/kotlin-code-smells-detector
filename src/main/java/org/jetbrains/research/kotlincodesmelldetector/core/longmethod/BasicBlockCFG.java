@@ -5,14 +5,15 @@ import org.jetbrains.kotlin.fir.resolve.dfa.cfg.*;
 import java.util.*;
 
 class BasicBlockCFG {
+    public final Map<CFGNode<?>, BasicBlock> nodeToBlock = new LinkedHashMap<>();
     private final List<BasicBlock> basicBlocks;
     private final Map<BasicBlock, Set<BasicBlock>> forwardReachableBlocks;
-    public final Map<CFGNode<?>, BasicBlock> nodeToBlock = new LinkedHashMap<>();
 
     BasicBlockCFG(ControlFlowGraph cfg) {
         this.basicBlocks = new ArrayList<>();
         this.forwardReachableBlocks = new LinkedHashMap<>();
-        Set<CFGNode<?>> allNodes = new HashSet<>(cfg.getNodes());
+        List<CFGNode<?>> allNodes = cfg.getNodes();
+        //Set<CFGNode<?>> allNodes = new HashSet<CFGNode<?>>(FirUtilsKt.getAllCfgNodes(cfg));
         //Map<CFGBlockNode, List<CFGNode>> directlyNestedNodesInBlocks = cfg.getDirectlyNestedNodesInBlocks();
         // TODO no special handling for try for now
         //        for (CFGBlockNode blockNode : directlyNestedNodesInBlocks.keySet()) {

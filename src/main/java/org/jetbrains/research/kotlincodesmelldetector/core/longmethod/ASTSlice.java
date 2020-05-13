@@ -17,7 +17,7 @@ public class ASTSlice {
     //  private final FirClass<?> sourceTypeDeclaration;
     @NotNull
     private final FirSimpleFunction sourceMethodDeclaration;
-    private final Set<CFGNode<?>> sliceNodes;
+    private final List<CFGNode<?>> sliceNodes;
     private final Set<FirElement> sliceStatements;
     private FirVariable<?> localVariableCriterion;
 
@@ -55,8 +55,7 @@ public class ASTSlice {
         return localVariableCriterion;
     }
 
-    // TODO implement
-    public Set<CFGNode<? extends FirElement>> getSliceNodes() {
+    public List<CFGNode<? extends FirElement>> getSliceNodes() {
         return sliceNodes;
     }
 

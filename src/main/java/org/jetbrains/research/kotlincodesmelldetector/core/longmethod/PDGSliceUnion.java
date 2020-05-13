@@ -11,7 +11,7 @@ import java.util.*;
 
 public class PDGSliceUnion {
     private final ControlFlowGraph cfg;
-    private final HashSet<CFGNode<?>> sliceNodes;
+    private final List<CFGNode<?>> sliceNodes;
     private final FirSimpleFunction function;
     private final FirVariable<?> localVariableCriterion;
 
@@ -21,7 +21,7 @@ public class PDGSliceUnion {
     public PDGSliceUnion(FirSimpleFunction firSimpleFunction, ControlFlowGraph cfg, BasicBlock basicBlock, Set<CFGNode<?>> nodeCriteria, FirVariable<?> localVariableCriterion) {
         this.cfg = cfg;
         this.function = firSimpleFunction;
-        this.sliceNodes = new HashSet<>();
+        this.sliceNodes = new ArrayList<>();
         this.localVariableCriterion = localVariableCriterion;
         for (CFGNode<?> nodeCriterion : nodeCriteria) {
             sliceNodes.addAll(computeSlice(nodeCriterion));
@@ -186,7 +186,7 @@ public class PDGSliceUnion {
         return sliceNodes;
     }
 
-    public Set<CFGNode<?>> getSliceNodes() {
+    public List<CFGNode<?>> getSliceNodes() {
         return sliceNodes;
     }
 
