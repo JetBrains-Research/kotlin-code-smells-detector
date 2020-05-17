@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.getDescriptorsFiltered
 
-data class ClassEntity(val element: KtClassOrObject, val signature: String) {
+data class ClassEntity(val element: KtClassOrObject) {
     val isEnum = element is KtClass && element.isEnum()
     val isInterface = element is KtClass && element.isInterface()
     val attributeList: MutableList<KtNamedDeclaration> = mutableListOf()

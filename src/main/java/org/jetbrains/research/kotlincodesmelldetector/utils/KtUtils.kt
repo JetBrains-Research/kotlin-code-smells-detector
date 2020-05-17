@@ -6,6 +6,7 @@ import com.intellij.psi.SmartPointerManager
 import com.intellij.psi.SmartPsiElementPointer
 import org.jetbrains.kotlin.idea.refactoring.fqName.fqName
 import org.jetbrains.kotlin.idea.references.mainReference
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.nj2k.postProcessing.resolve
 import org.jetbrains.kotlin.nj2k.postProcessing.type
 import org.jetbrains.kotlin.psi.KtCallExpression
@@ -297,15 +298,14 @@ val acceptableOriginClassNames = setOf(
     "java.util.LinkedHashSet", "java.util.SortedSet", "java.util.TreeSet", "java.util.Vector", "java.util.Stack"
 )
 
-fun isContainer(type: String): Boolean {
-    return type in acceptableOriginClassNames
+fun isContainer(type: FqName): Boolean {
+    return type.asString() in acceptableOriginClassNames
 }
 
-fun getConstructorType(declaration: KtNamedDeclaration): String? {
-    return declaration.type()?.fqName?.asString()
+fun getConstructorType(declaration: KtNamedDeclaration): FqName? {
+    return declaration.type()?.fqName
 }
 
-fun getFirstTypeArgumentType(declaration: KtNamedDeclaration): String? {
+fun getFirstTypeArgumentType(declaration: KtNamedDeclaration): FqName? {
     return declaration.type()?.arguments?.getOrNull(0)?.type?.constructor?.declarationDescriptor?.fqNameOrNull()
-        ?.asString()
 }
