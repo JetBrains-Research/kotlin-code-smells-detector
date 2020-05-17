@@ -43,6 +43,7 @@ internal class MoveMethodPanel(private val project: Project) : SimpleToolWindowP
     private val selectButton: ActionButton
     private val deselectButton: ActionButton
     private val scopeChooserComboBox: ScopeChooserComboBox
+    private val checkBox: JCheckBox = JCheckBox(KotlinCodeSmellDetectorBundle.message("feature.envy.search.checkbox"))
 
     private val refactorings: MutableList<MoveMethodRefactoring> = ArrayList()
     private var scrollPane: JScrollPane = JBScrollPane()
@@ -71,6 +72,8 @@ internal class MoveMethodPanel(private val project: Project) : SimpleToolWindowP
         buttonsPanel.layout = FlowLayout(FlowLayout.LEFT)
         buttonsPanel.add(scopeChooserComboBox)
         buttonsPanel.add(toolbar.component)
+        checkBox.isSelected = true
+        buttonsPanel.add(checkBox)
         return buttonsPanel
     }
 
@@ -106,7 +109,8 @@ internal class MoveMethodPanel(private val project: Project) : SimpleToolWindowP
     }
 
     private fun calculateRefactorings() {
-        val projectInfo = ProjectInfo(scopeChooserComboBox.getScope())
+        val sourceProjectInfo = ProjectInfo(scopeChooserComboBox.getScope())
+        val targetProjectInfo = if (checkBox.isSelected) sourceProjectInfo else ProjectInfo(defaultScope)
         val backgroundable: Backgroundable = object : Backgroundable(
             project,
             KotlinCodeSmellDetectorBundle.message("feature.envy.detect.indicator.status"),
@@ -114,7 +118,7 @@ internal class MoveMethodPanel(private val project: Project) : SimpleToolWindowP
         ) {
             override fun run(indicator: ProgressIndicator) {
                 ApplicationManager.getApplication().runReadAction {
-                    val candidates = KotlinCodeSmellFacade.getMoveMethodRefactoringOpportunities(projectInfo, indicator)
+                    val candidates = KotlinCodeSmellFacade.getMoveMethodRefactoringOpportunities(sourceProjectInfo, targetProjectInfo, indicator)
                     val references =
                         candidates.stream().filter { obj: MoveMethodCandidateRefactoring? -> Objects.nonNull(obj) }
                             .map { candidate: MoveMethodCandidateRefactoring ->
@@ -139,7 +143,7 @@ internal class MoveMethodPanel(private val project: Project) : SimpleToolWindowP
                 showEmptyPanel()
             }
         }
-        AbstractRefactoringPanel.runAfterCompilationCheck(backgroundable, project, projectInfo)
+        AbstractRefactoringPanel.runAfterCompilationCheck(backgroundable, project, targetProjectInfo)
     }
 
     private fun showEmptyPanel() {

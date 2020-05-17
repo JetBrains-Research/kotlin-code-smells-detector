@@ -104,7 +104,7 @@ class DistanceMatrix(private val project: ProjectInfo, private val indicator: Pr
     }
 
     fun getMoveMethodCandidateRefactoringsByAccess(
-            classNamesToBeExamined: Set<KtClassOrObject>,
+            classesToBeExamined: Set<KtClassOrObject>,
             indicator: ProgressIndicator
     ): List<MoveMethodCandidateRefactoring> {
         val candidateRefactoringList: MutableList<MoveMethodCandidateRefactoring> = mutableListOf()
@@ -113,7 +113,7 @@ class DistanceMatrix(private val project: ProjectInfo, private val indicator: Pr
             indicator.fraction = i.toDouble() / entityMap.keys.size
             if (entity is KtNamedFunction && methodCanBeMoved(entity)) {
                 val sourceClass = entity.containingClassOrObject ?: continue
-                if (classNamesToBeExamined.contains(sourceClass)) {
+                if (classesToBeExamined.contains(sourceClass)) {
                     val entitySet = entityMap[entity]!!
                     val accessMap = computeAccessMap(entitySet)
                     val sortedByAccessMap = TreeMap<Int, MutableSet<KtClassOrObject>>()

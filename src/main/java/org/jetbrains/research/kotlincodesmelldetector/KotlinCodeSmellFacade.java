@@ -39,17 +39,20 @@ public class KotlinCodeSmellFacade {
         return new TreeSet<>(groupedBySourceClassMap.values());
     }
 
-    public static List<MoveMethodCandidateRefactoring> getMoveMethodRefactoringOpportunities(ProjectInfo project, ProgressIndicator indicator) {
-        DistanceMatrix distanceMatrix = new DistanceMatrix(project, indicator);
+    public static List<MoveMethodCandidateRefactoring> getMoveMethodRefactoringOpportunities(ProjectInfo sourceProjectInfo, ProjectInfo targetProjectInfo, ProgressIndicator indicator) {
+        DistanceMatrix distanceMatrix = new DistanceMatrix(targetProjectInfo, indicator);
 
-        Set<KtClassOrObject> classNamesToBeExamined = new LinkedHashSet<>();
-        for (Map.Entry<KtClassOrObject, ClassEntity> entry: distanceMatrix.getClasses().entrySet()) {
-            if (!entry.getValue().isEnum() && !entry.getValue().isInterface()) {
-                classNamesToBeExamined.add(entry.getKey());
+        Set<KtClassOrObject> classesToBeExamined = new LinkedHashSet<>();
+        for (SmartPsiElementPointer<KtElement> pointer : sourceProjectInfo.getClasses()) {
+            KtElement element = pointer.getElement();
+            if (element instanceof KtClassOrObject) {
+                if (!(element instanceof KtClass && (((KtClass) element).isInterface() || ((KtClass) element).isEnum()))) {
+                    classesToBeExamined.add((KtClassOrObject) element);
+                }
             }
         }
         List<MoveMethodCandidateRefactoring> moveMethodCandidateRefactorings =
-                distanceMatrix.getMoveMethodCandidateRefactoringsByAccess(classNamesToBeExamined, indicator);
+                distanceMatrix.getMoveMethodCandidateRefactoringsByAccess(classesToBeExamined, indicator);
         Collections.sort(moveMethodCandidateRefactorings);
         return moveMethodCandidateRefactorings;
     }
