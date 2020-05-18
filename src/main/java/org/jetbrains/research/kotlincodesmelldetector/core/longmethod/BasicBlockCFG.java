@@ -1,6 +1,7 @@
 package org.jetbrains.research.kotlincodesmelldetector.core.longmethod;
 
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.*;
+import org.jetbrains.research.kotlincodesmelldetector.utils.FirUtilsKt;
 
 import java.util.*;
 
@@ -12,8 +13,8 @@ class BasicBlockCFG {
     BasicBlockCFG(ControlFlowGraph cfg) {
         this.basicBlocks = new ArrayList<>();
         this.forwardReachableBlocks = new LinkedHashMap<>();
-        List<CFGNode<?>> allNodes = cfg.getNodes();
-        //Set<CFGNode<?>> allNodes = new HashSet<CFGNode<?>>(FirUtilsKt.getAllCfgNodes(cfg));
+        //List<CFGNode<?>> allNodes = cfg.getNodes();
+        List<CFGNode<?>> allNodes = FirUtilsKt.sortedNodes(cfg);
         //Map<CFGBlockNode, List<CFGNode>> directlyNestedNodesInBlocks = cfg.getDirectlyNestedNodesInBlocks();
         // TODO no special handling for try for now
         //        for (CFGBlockNode blockNode : directlyNestedNodesInBlocks.keySet()) {
@@ -31,7 +32,10 @@ class BasicBlockCFG {
             //                    basicBlock.addTryNode(tryNode);
             //                }
             //            } else
-            if (node instanceof EnterNodeMarker) {
+            if (node instanceof EnterNodeMarker || node instanceof ExitNodeMarker) { // Do not add these special nodes to block
+                continue;
+            }
+            if (isFirst(node)) {
                 BasicBlock basicBlock = new BasicBlock(node, nodeToBlock);
                 if (!basicBlocks.isEmpty()) {
                     BasicBlock previousBlock = basicBlocks.get(basicBlocks.size() - 1);
@@ -55,6 +59,16 @@ class BasicBlockCFG {
         //            }
         //        }
         BasicBlock.resetBlockNum();
+    }
+
+    // Checks if the node directly follows an EnterNode
+    private boolean isFirst(CFGNode<?> node) {
+        for (CFGNode<?> cfgNode : node.getPreviousNodes()) {
+            if (cfgNode instanceof EnterNodeMarker) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public List<BasicBlock> getBasicBlocks() {

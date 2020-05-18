@@ -76,28 +76,23 @@ public class PDGSliceUnionCollection {
     //returns the node (branch or method entry) that directly dominates the leader of the block
     private CFGNode<?> directlyDominates(BasicBlock block) {
         CFGNode<?> leaderCFGNode = block.getLeader();
-        for (Map.Entry<CFGNode<?>, EdgeKind> edge : leaderCFGNode.getIncomingEdges().entrySet()) {
-            // TODO if correct condition
-            if (edge.getValue() == EdgeKind.Cfg) {
-                return edge.getKey();
-            }
+        if (leaderCFGNode.getPreviousNodes().isEmpty()) {
+            return null;
         }
-        return null;
+        return leaderCFGNode.getPreviousNodes().get(0);
     }
 
     private Set<BasicBlock> dominatedBlocks(CFGNode<?> branchNode) {
         Set<BasicBlock> dominatedBlocks = new LinkedHashSet<>();
-        for (Map.Entry<CFGNode<?>, EdgeKind> edge : branchNode.getOutgoingEdges().entrySet()) {
+        for (CFGNode<?> node : branchNode.getFollowingNodes()) {
             // TODO is following check correct?
-            if (edge.getValue() == EdgeKind.Cfg) {
-                CFGNode<?> dstNode = edge.getKey();
-                BasicBlock dstBlock = basicBlockCFG.nodeToBlock.get(dstNode);
+                BasicBlock dstBlock = basicBlockCFG.nodeToBlock.get(node);
                 dominatedBlocks.add(dstBlock);
                 CFGNode<?> dstBlockLastNode = dstBlock.getLastNode();
                 // TODO is following check correct?
                 if (dstBlockLastNode instanceof EnterNodeMarker && !dstBlockLastNode.equals(branchNode))
                     dominatedBlocks.addAll(dominatedBlocks(dstBlockLastNode));
-            }
+
         }
         return dominatedBlocks;
     }

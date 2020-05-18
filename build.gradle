@@ -83,7 +83,7 @@ apply plugin: 'kotlin'
 intellij {
     version '2020.1.1'
     version '2020.1'
-    plugins = ['Kotlin', 'java']
+    plugins = ['/home/anastasiya/AU/Kotlin', 'java', 'Kotlin']
     pluginName 'KotlinCodeSmellDetector'
     downloadSources true
     intellij.updateSinceUntilBuild false

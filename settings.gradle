@@ -1,7 +1,6 @@
 pluginManagement {
     gradle.ext.kotlin_version = '1.4.0-dev-8107'
     repositories {
-        maven { url 'https://teamcity.jetbrains.com/guestAuth/app/rest/builds/buildType:(id:Kotlin_KotlinPublic_Compiler),number:1.4.0-dev-6009,branch:(default:any)/artifacts/content/maven' }
         maven { url "https://teamcity.jetbrains.com/guestAuth/app/rest/builds/buildType:(id:Kotlin_KotlinPublic_Compiler),number:${gradle.ext.kotlin_version},branch:(default:any)/artifacts/content/maven" }
         mavenCentral()
         gradlePluginPortal()

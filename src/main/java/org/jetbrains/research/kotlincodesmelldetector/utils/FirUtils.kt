@@ -1,7 +1,6 @@
 package org.jetbrains.research.kotlincodesmelldetector.utils
 
 import com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.fir.analysis.cfa.TraverseDirection
 import org.jetbrains.kotlin.fir.declarations.FirFile
 import org.jetbrains.kotlin.fir.declarations.FirRegularClass
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction
@@ -12,6 +11,8 @@ import org.jetbrains.kotlin.fir.resolve.dfa.cfg.*
 import org.jetbrains.kotlin.fir.resolve.transformers.FirTotalResolveTransformer
 import org.jetbrains.kotlin.idea.fir.FirModuleResolveStateImpl
 import org.jetbrains.kotlin.idea.fir.getOrBuildFir
+import org.jetbrains.kotlin.utils.DFS
+
 
 fun extractFirSimpleFunctions(firFile: FirFile): List<FirSimpleFunction> {
     val result = mutableListOf<FirSimpleFunction>()
@@ -61,4 +62,45 @@ fun getVariableDeclarationsInFunction(firSimpleFunction: FirSimpleFunction): Lis
     val cfg = (firSimpleFunction.controlFlowGraphReference as FirControlFlowGraphReferenceImpl).controlFlowGraph
     result.addAll(cfg.nodes.filterIsInstance<VariableDeclarationNode>().map { it.fir })
     return result
+}
+
+@ExperimentalStdlibApi
+fun cfgNodesDfs(cfg: ControlFlowGraph): MutableList<CFGNode<*>> {
+    val nodes = mutableListOf<CFGNode<*>>()
+    val stack = ArrayDeque<CFGNode<*>>()
+    val initialNode = cfg.enterNode
+    stack.addFirst(initialNode)
+    while (!stack.isEmpty()) {
+        val node = stack.removeFirst()
+        nodes.add(node)
+        node.followingNodes.forEach{stack.addFirst(it)}
+    }
+    return nodes
+}
+
+// the method is copy-paste of a private method in ControlFlowGraphRenderer.kt
+fun ControlFlowGraph.sortedNodes(): List<CFGNode<*>> {
+    val nodesToSort = nodes.filterTo(mutableListOf()) { it != enterNode }
+    val graphs = mutableSetOf(this)
+    forEachSubGraph {
+        nodesToSort += it.nodes
+        graphs += it
+    }
+
+    val topologicalOrder = DFS.topologicalOrder(nodesToSort) {
+        val result = if (it !is WhenBranchConditionExitNode || it.followingNodes.size < 2) {
+            it.followingNodes
+        } else {
+            it.followingNodes.sortedBy { node -> if (node is BlockEnterNode) 1 else 0 }
+        }.filter { node -> node.owner in graphs }
+        result
+    }
+    return listOf(enterNode) + topologicalOrder
+}
+
+private fun ControlFlowGraph.forEachSubGraph(block: (ControlFlowGraph) -> Unit) {
+    for (subGraph in subGraphs) {
+        block(subGraph)
+        subGraph.forEachSubGraph(block)
+    }
 }

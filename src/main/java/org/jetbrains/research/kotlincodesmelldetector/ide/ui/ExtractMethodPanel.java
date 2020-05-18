@@ -324,7 +324,7 @@ class ExtractMethodPanel extends JPanel {
      * Collects statements that can be extracted into a separate method.
      */
     public SmartList<FirElement> getStatementsToExtract(ASTSlice slice) {
-        Set<CFGNode<? extends FirElement>> nodes = slice.getSliceNodes();
+        List<CFGNode<? extends FirElement>> nodes = slice.getSliceNodes();
         SmartList<FirElement> statementsToExtract = new SmartList<>();
 
         for (CFGNode<? extends FirElement> cfgNode : nodes) {
