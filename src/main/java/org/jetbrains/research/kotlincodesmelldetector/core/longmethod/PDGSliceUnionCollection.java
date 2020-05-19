@@ -2,10 +2,10 @@ package org.jetbrains.research.kotlincodesmelldetector.core.longmethod;
 
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction;
 import org.jetbrains.kotlin.fir.declarations.FirVariable;
-import org.jetbrains.kotlin.fir.expressions.FirVariableAssignment;
-import org.jetbrains.kotlin.fir.resolve.dfa.cfg.*;
-import org.jetbrains.research.kotlincodesmelldetector.core.longmethod.BasicBlock;
-import org.jetbrains.research.kotlincodesmelldetector.core.longmethod.PDGSliceUnion;
+import org.jetbrains.kotlin.fir.resolve.dfa.cfg.CFGNode;
+import org.jetbrains.kotlin.fir.resolve.dfa.cfg.ControlFlowGraph;
+import org.jetbrains.kotlin.fir.resolve.dfa.cfg.EnterNodeMarker;
+import org.jetbrains.kotlin.fir.resolve.dfa.cfg.VariableAssignmentNode;
 
 import java.util.*;
 
@@ -13,8 +13,6 @@ public class PDGSliceUnionCollection {
     private final Map<BasicBlock, PDGSliceUnion> sliceUnionMap;
     private final BasicBlockCFG basicBlockCFG;
     private final FirSimpleFunction firSimpleFunction;
-    // TODO do not need this, just for testing basic blocks
-    private final List<BasicBlock> basicBlocks = new ArrayList<>();
 
     public PDGSliceUnionCollection(FirSimpleFunction firSimpleFunction, ControlFlowGraph cfg, FirVariable<?> variable) {
         this.sliceUnionMap = new LinkedHashMap<>();
@@ -34,15 +32,11 @@ public class PDGSliceUnionCollection {
             }
             for (BasicBlock basicBlock : basicBlockIntersection) {
                 PDGSliceUnion sliceUnion = new PDGSliceUnion(firSimpleFunction, cfg, basicBlock, nodeCriteria, variable);
-                // TODO omit this check for now
-//                if (sliceUnion.satisfiesRules())
-                    //sliceUnionMap.put(basicBlock, sliceUnion);
+                // TODO check sliceUnion.satisfiesRules()
                 sliceUnionMap.put(basicBlock, sliceUnion);
-                basicBlocks.add(basicBlock);
             }
         }
     }
-
 
     private Set<BasicBlock> boundaryBlocks(ControlFlowGraph cfg, CFGNode<?> node) {
         Set<BasicBlock> boundaryBlocks = new LinkedHashSet<>();
@@ -52,25 +46,21 @@ public class PDGSliceUnionCollection {
             Set<BasicBlock> dominatedBlocks = dominatedBlocks(block);
             Set<BasicBlock> intersection = new LinkedHashSet<>(forwardReachableBlocks);
             intersection.retainAll(dominatedBlocks);
-            if (intersection.contains(srcBlock))
+            if (intersection.contains(srcBlock)) {
                 boundaryBlocks.add(block);
+            }
         }
         return boundaryBlocks;
     }
 
+    // TODO use map for cache
     private Set<BasicBlock> dominatedBlocks(BasicBlock block) {
         CFGNode<?> pdgNode = directlyDominates(block);
-        // TODO do not use cache for now
-//        if (dominatedBlockMap.containsKey(pdgNode)) {
-//            return dominatedBlockMap.get(pdgNode);
-//        } else {
-            Set<BasicBlock> dominatedBlocks = null;
-            if (pdgNode != null) {
-                dominatedBlocks = dominatedBlocks(pdgNode);
-            }
-           // dominatedBlockMap.put(pdgNode, dominatedBlocks);
-            return dominatedBlocks;
-      //  }
+        Set<BasicBlock> dominatedBlocks = null;
+        if (pdgNode != null) {
+            dominatedBlocks = dominatedBlocks(pdgNode);
+        }
+        return dominatedBlocks;
     }
 
     //returns the node (branch or method entry) that directly dominates the leader of the block
@@ -85,13 +75,13 @@ public class PDGSliceUnionCollection {
     private Set<BasicBlock> dominatedBlocks(CFGNode<?> branchNode) {
         Set<BasicBlock> dominatedBlocks = new LinkedHashSet<>();
         for (CFGNode<?> node : branchNode.getFollowingNodes()) {
-            // TODO is following check correct?
-                BasicBlock dstBlock = basicBlockCFG.nodeToBlock.get(node);
-                dominatedBlocks.add(dstBlock);
-                CFGNode<?> dstBlockLastNode = dstBlock.getLastNode();
-                // TODO is following check correct?
-                if (dstBlockLastNode instanceof EnterNodeMarker && !dstBlockLastNode.equals(branchNode))
-                    dominatedBlocks.addAll(dominatedBlocks(dstBlockLastNode));
+            BasicBlock dstBlock = basicBlockCFG.nodeToBlock.get(node);
+            dominatedBlocks.add(dstBlock);
+            CFGNode<?> dstBlockLastNode = dstBlock.getLastNode();
+            // TODO check condition
+            if (dstBlockLastNode instanceof EnterNodeMarker && !dstBlockLastNode.equals(branchNode)) {
+                dominatedBlocks.addAll(dominatedBlocks(dstBlockLastNode));
+            }
 
         }
         return dominatedBlocks;
@@ -107,22 +97,14 @@ public class PDGSliceUnionCollection {
         return nodeCriteria;
     }
 
-    // TODO make it work the same now it's simplified a lot
-    // in the original plugin рассматриваются всякие поля классов, на которые могут влиять
-    // и всякое такое
+    // TODO handle class fields
     private boolean isNodeDefinesButNotDeclaresVariable(CFGNode<?> node, FirVariable<?> variable) {
         return node instanceof VariableAssignmentNode;
-//        return (definesLocalVariable(node, variable) &&
-//                !declaresLocalVariable(node,variable));
     }
 
 
     public Collection<PDGSliceUnion> getSliceUnions() {
         return sliceUnionMap.values();
-    }
-
-    public Collection<BasicBlock> getBasicBlocks() {
-        return basicBlocks;
     }
 
     private Set<BasicBlock> forwardReachableBlocks(BasicBlock basicBlock) {

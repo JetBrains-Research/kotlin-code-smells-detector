@@ -260,7 +260,7 @@ class ExtractMethodPanel extends JPanel {
      * Checks that the slice can be extracted into a separate method without compilation errors.
      */
     private boolean canBeExtracted(ASTSlice slice) {
-        // TODO
+        // TODO implement
         return true;
 //        SmartList<PsiStatement> statementsToExtract = getStatementsToExtract(slice);
 //
@@ -309,7 +309,7 @@ class ExtractMethodPanel extends JPanel {
      * @return callback to run when "Refactor" button is selected.
      */
     private Runnable doExtract(ASTSlice slice) {
-        // TODO
+        // TODO implement
         return () -> {
 //            Editor editor = FileEditorManager.getInstance(slice.getSourceMethodDeclaration().getProject()).getSelectedTextEditor();
 //            SmartList<PsiStatement> statementsToExtract = getStatementsToExtract(slice);

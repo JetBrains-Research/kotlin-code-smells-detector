@@ -12,11 +12,8 @@ import java.util.Set;
  * Representation of a refactoring, which suggests to extract code into separate method.
  */
 public class ExtractMethodCandidateGroup implements Refactoring {
-    private final @NotNull
-    FirSimpleFunction method;
-    private @NotNull
-    final
-    Set<ASTSlice> candidates;
+    private final @NotNull FirSimpleFunction method;
+    private @NotNull final Set<ASTSlice> candidates;
 
     /**
      * Creates refactoring instance.
@@ -66,11 +63,9 @@ public class ExtractMethodCandidateGroup implements Refactoring {
     }
 
     @Override
+    // TODO add enclosing class if any
     public String toString() {
         FirSimpleFunction function = getMethod();
-        // TODO containingClass
-        //        return psiMethod.getContainingClass() == null ? "" :
-        //                psiMethod.getContainingClass().getQualifiedName() + "::" + psiMethod.getName();
         return function.getName().toString();
     }
 }

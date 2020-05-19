@@ -14,12 +14,10 @@ import org.jetbrains.kotlin.idea.fir.FirModuleResolveStateImpl
 import org.jetbrains.kotlin.idea.fir.getOrBuildFir
 import org.jetbrains.kotlin.utils.DFS
 
-
 fun extractFirSimpleFunctions(firFile: FirFile): List<FirSimpleFunction> {
     val result = mutableListOf<FirSimpleFunction>()
     result.addAll(firFile.declarations.filterIsInstance<FirSimpleFunction>())
-    // TODO add check for parser generated
-    // TODO we need not only regular classes I guess, see original method
+    // TODO other types of classes
     result.addAll(firFile.declarations.filterIsInstance<FirRegularClass>().flatMap {
         it.declarations.filterIsInstance<FirSimpleFunction>()
     })
@@ -38,11 +36,8 @@ fun getCurrentFirFileOpenInEditor(project: Project): FirFile {
  * Returns variables inside as well as function parameters
  */
 fun getVariableDeclarationsInFunction(firSimpleFunction: FirSimpleFunction, cfg: ControlFlowGraph): List<FirVariable<*>> {
-    // TODO meaning of asterisk here
     val result = mutableListOf<FirVariable<*>>()
     result.addAll(firSimpleFunction.valueParameters)
-    // TODO any resolve needed?
-
     // TODO better way to find all vars and vals
     result.addAll(cfg.nodes.map { it.fir }.filterIsInstance<FirVariable<*>>().filter { !it.name.isSpecial })
     return result
@@ -60,7 +55,7 @@ fun getVariableDeclarationsInFunction(firSimpleFunction: FirSimpleFunction): Lis
 }
 
 // the method is copy-paste of a private method in ControlFlowGraphRenderer.kt
-// TODO fitter out dfg edges
+// TODO filter out dfg edges
 fun ControlFlowGraph.sortedNodes(): List<CFGNode<*>> {
     val nodesToSort = nodes.filterTo(mutableListOf()) { it != enterNode }
     val graphs = mutableSetOf(this)

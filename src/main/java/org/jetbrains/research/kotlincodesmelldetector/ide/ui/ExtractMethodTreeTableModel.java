@@ -70,9 +70,7 @@ public class ExtractMethodTreeTableModel extends DefaultTreeModel implements Tre
             ExtractMethodCandidateGroup group = (ExtractMethodCandidateGroup) o;
             switch (index) {
                 case 0:
-                    // TODO get name of containing class
-//                    PsiClass psiClass = group.getMethod().getContainingClass();
-//                    String declaringClassName = psiClass == null ? "" : psiClass.getQualifiedName();
+                    // TODO add name of containing class
                     String methodName = group.getMethod().getName().asString();
                     return "declaringClassName" + "::" + methodName;
                 case 1:
@@ -120,5 +118,4 @@ public class ExtractMethodTreeTableModel extends DefaultTreeModel implements Tre
     @Override
     public void setTree(JTree tree) {
     }
-
 }

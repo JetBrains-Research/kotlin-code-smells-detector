@@ -1,6 +1,9 @@
 package org.jetbrains.research.kotlincodesmelldetector.core.longmethod;
 
-import org.jetbrains.kotlin.fir.resolve.dfa.cfg.*;
+import org.jetbrains.kotlin.fir.resolve.dfa.cfg.CFGNode;
+import org.jetbrains.kotlin.fir.resolve.dfa.cfg.ControlFlowGraph;
+import org.jetbrains.kotlin.fir.resolve.dfa.cfg.EnterNodeMarker;
+import org.jetbrains.kotlin.fir.resolve.dfa.cfg.LoopBlockEnterNode;
 import org.jetbrains.research.kotlincodesmelldetector.utils.FirUtilsKt;
 
 import java.util.*;
@@ -13,10 +16,9 @@ class BasicBlockCFG {
     BasicBlockCFG(ControlFlowGraph cfg) {
         this.basicBlocks = new ArrayList<>();
         this.forwardReachableBlocks = new LinkedHashMap<>();
-        //List<CFGNode<?>> allNodes = cfg.getNodes();
         List<CFGNode<?>> allNodes = FirUtilsKt.sortedNodes(cfg);
         //Map<CFGBlockNode, List<CFGNode>> directlyNestedNodesInBlocks = cfg.getDirectlyNestedNodesInBlocks();
-        // TODO no special handling for try for now
+        // TODO handle try nodes
         //        for (CFGBlockNode blockNode : directlyNestedNodesInBlocks.keySet()) {
         //            if (blockNode instanceof CFGTryNode) {
         //                CFGTryNode tryNode = (CFGTryNode) blockNode;
@@ -61,16 +63,6 @@ class BasicBlockCFG {
         BasicBlock.resetBlockNum();
     }
 
-    // Checks if the node directly follows an EnterNode
-    private boolean isFirst(CFGNode<?> node) {
-        for (CFGNode<?> cfgNode : node.getPreviousNodes()) {
-            if (cfgNode instanceof EnterNodeMarker) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public List<BasicBlock> getBasicBlocks() {
         return basicBlocks;
     }
@@ -92,5 +84,15 @@ class BasicBlockCFG {
         }
         forwardReachableBlocks.put(basicBlock, reachableBlocks);
         return reachableBlocks;
+    }
+    
+    // Checks if the node directly follows an EnterNode
+    private boolean isFirst(CFGNode<?> node) {
+        for (CFGNode<?> cfgNode : node.getPreviousNodes()) {
+            if (cfgNode instanceof EnterNodeMarker) {
+                return true;
+            }
+        }
+        return false;
     }
 }

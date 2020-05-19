@@ -11,8 +11,6 @@ public class BasicBlock {
     private final int id;
     private final CFGNode<?> leader;
     private final List<CFGNode<?>> nodes;
-    // TODO do we need this
-   // private final List<CFGTryNode> tryNodes;
     private BasicBlock previousBasicBlock;
     private BasicBlock nextBasicBlock;
 
@@ -21,9 +19,7 @@ public class BasicBlock {
         this.id = blockNum;
         this.leader = node;
         nodeToBlock.put(node,this);
-        //node.setBasicBlock(this);
         this.nodes = new ArrayList<>();
-        //this.tryNodes = new ArrayList<>();
     }
 
     public int getId() {
@@ -63,9 +59,9 @@ public class BasicBlock {
     public void add(CFGNode<?> node, Map<CFGNode<?>, BasicBlock> nodeToBlock) {
         nodes.add(node);
         nodeToBlock.put(node,this);
-       // node.setBasicBlock(this);
     }
 
+    // TODO add tryNodes to BasicBlock
 //    public void addTryNode(CFGTryNode tryNode) {
 //        tryNodes.add(tryNode);
 //        tryNode.setBasicBlock(this);

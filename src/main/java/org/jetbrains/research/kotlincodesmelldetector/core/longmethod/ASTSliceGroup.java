@@ -19,7 +19,7 @@ public class ASTSliceGroup {
 //                slicesToBeRemoved.add(previousSlice);
 //            }
 //        }
-       // this.candidates.removeAll(slicesToBeRemoved);
+//        this.candidates.removeAll(slicesToBeRemoved);
         this.candidates.add(slice);
     }
 

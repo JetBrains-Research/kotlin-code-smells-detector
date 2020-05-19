@@ -71,7 +71,6 @@ public class KotlinCodeSmellFacade {
     }
 
     private static void processMethod(final Set<ASTSliceGroup> extractedSliceGroups, FirSimpleFunction firSimpleFunction) {
-        // TODO is there any meaning in this check?
         if (firSimpleFunction.getBody() != null) {
             if (firSimpleFunction.getControlFlowGraphReference() instanceof FirEmptyControlFlowGraphReference) {
                 // TODO error handling
