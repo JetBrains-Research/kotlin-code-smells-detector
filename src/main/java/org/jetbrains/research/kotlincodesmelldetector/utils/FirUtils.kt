@@ -6,6 +6,7 @@ import org.jetbrains.kotlin.fir.declarations.FirRegularClass
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction
 import org.jetbrains.kotlin.fir.declarations.FirVariable
 import org.jetbrains.kotlin.fir.java.FirProjectSessionProvider
+import org.jetbrains.kotlin.fir.psi
 import org.jetbrains.kotlin.fir.resolve.dfa.FirControlFlowGraphReferenceImpl
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.*
 import org.jetbrains.kotlin.fir.resolve.transformers.FirTotalResolveTransformer
@@ -42,7 +43,8 @@ fun getVariableDeclarationsInFunction(firSimpleFunction: FirSimpleFunction, cfg:
     result.addAll(firSimpleFunction.valueParameters)
     // TODO any resolve needed?
 
-    result.addAll(cfg.nodes.filterIsInstance<VariableDeclarationNode>().map { it.fir })
+    // TODO better way to find all vars and vals
+    result.addAll(cfg.nodes.map { it.fir }.filterIsInstance<FirVariable<*>>().filter { !it.name.isSpecial })
     return result
 }
 
@@ -50,35 +52,15 @@ fun getVariableDeclarationsInFunction(firSimpleFunction: FirSimpleFunction, cfg:
  * Returns variables inside as well as function parameters
  */
 fun getVariableDeclarationsInFunction(firSimpleFunction: FirSimpleFunction): List<FirVariable<*>> {
-    // TODO meaning of asterisk here
-    val result = mutableListOf<FirVariable<*>>()
-    result.addAll(firSimpleFunction.valueParameters)
-    // TODO any resolve needed?
-
     if (firSimpleFunction.controlFlowGraphReference !is FirControlFlowGraphReferenceImpl) {
-        // TODO
         return emptyList()
     }
     val cfg = (firSimpleFunction.controlFlowGraphReference as FirControlFlowGraphReferenceImpl).controlFlowGraph
-    result.addAll(cfg.nodes.filterIsInstance<VariableDeclarationNode>().map { it.fir })
-    return result
-}
-
-@ExperimentalStdlibApi
-fun cfgNodesDfs(cfg: ControlFlowGraph): MutableList<CFGNode<*>> {
-    val nodes = mutableListOf<CFGNode<*>>()
-    val stack = ArrayDeque<CFGNode<*>>()
-    val initialNode = cfg.enterNode
-    stack.addFirst(initialNode)
-    while (!stack.isEmpty()) {
-        val node = stack.removeFirst()
-        nodes.add(node)
-        node.followingNodes.forEach{stack.addFirst(it)}
-    }
-    return nodes
+    return getVariableDeclarationsInFunction(firSimpleFunction, cfg)
 }
 
 // the method is copy-paste of a private method in ControlFlowGraphRenderer.kt
+// TODO fitter out dfg edges
 fun ControlFlowGraph.sortedNodes(): List<CFGNode<*>> {
     val nodesToSort = nodes.filterTo(mutableListOf()) { it != enterNode }
     val graphs = mutableSetOf(this)
@@ -103,4 +85,8 @@ private fun ControlFlowGraph.forEachSubGraph(block: (ControlFlowGraph) -> Unit) 
         block(subGraph)
         subGraph.forEachSubGraph(block)
     }
+}
+
+fun CFGNode<*>.isEnterOrExitNode(): Boolean {
+    return (this is EnterNodeMarker) || (this is ExitNodeMarker)
 }

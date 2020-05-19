@@ -78,7 +78,6 @@ public class KotlinCodeSmellFacade {
                 throw new IllegalStateException("Empty cfg reference");
             }
             ControlFlowGraph cfg = ((FirControlFlowGraphReferenceImpl) firSimpleFunction.getControlFlowGraphReference()).getControlFlowGraph();
-            StringBuilder stringBuilder = new StringBuilder();
             for (FirVariable<?> declaration : getVariableDeclarationsInFunction(firSimpleFunction, cfg)) {
                 //stringBuilder.append(declaration.getName().toString() + ' ');
                 PDGSliceUnionCollection sliceUnionCollection = new PDGSliceUnionCollection(firSimpleFunction, cfg, declaration);
@@ -88,9 +87,6 @@ public class KotlinCodeSmellFacade {
                 //                int maximumNumberOfExtractedStatementsInGroup = 0;
                 //                int groupSize = sliceUnionCollection.getSliceUnions().size();
                 ASTSliceGroup sliceGroup = new ASTSliceGroup();
-                for (BasicBlock basicBlock : sliceUnionCollection.getBasicBlocks()) {
-                    stringBuilder.append(basicBlock.getLeader().toString());
-                }
                 for (PDGSliceUnion sliceUnion : sliceUnionCollection.getSliceUnions()) {
                     ASTSlice slice = new ASTSlice(sliceUnion);
                     //   if (true) { //!slice.isVariableCriterionDeclarationStatementIsDeeperNestedThanExtractedMethodInvocationInsertionStatement()) {

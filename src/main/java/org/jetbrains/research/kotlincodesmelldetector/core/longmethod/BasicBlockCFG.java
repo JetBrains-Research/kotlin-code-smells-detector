@@ -32,7 +32,7 @@ class BasicBlockCFG {
             //                    basicBlock.addTryNode(tryNode);
             //                }
             //            } else
-            if (node instanceof EnterNodeMarker || node instanceof ExitNodeMarker) { // Do not add these special nodes to block
+            if (FirUtilsKt.isEnterOrExitNode(node)) { // Do not add these special nodes to block
                 continue;
             }
             if (isFirst(node)) {
@@ -82,12 +82,9 @@ class BasicBlockCFG {
         Set<BasicBlock> reachableBlocks = new LinkedHashSet<>();
         reachableBlocks.add(basicBlock);
         CFGNode<?> lastNode = basicBlock.getLastNode();
-        Map<CFGNode<?>, EdgeKind> outgoingEdges = lastNode.getOutgoingEdges();
-        Set<Map.Entry<CFGNode<?>, EdgeKind>> entries = outgoingEdges.entrySet();
-        for (Map.Entry<CFGNode<?>, EdgeKind> entry : entries) {
+        for (CFGNode<?> dstNode : lastNode.getFollowingNodes()) {
             // TODO check if condition is correct, we not what loop back here
-            if (!(entry.getKey() instanceof LoopBlockEnterNode)) {
-                CFGNode<?> dstNode = entry.getKey();
+            if (!(dstNode instanceof LoopBlockEnterNode) && !(FirUtilsKt.isEnterOrExitNode(dstNode))) {
                 BasicBlock dstBasicBlock = nodeToBlock.get(dstNode);
                 reachableBlocks.add(dstBasicBlock);
                 reachableBlocks.addAll(forwardReachableBlocks(dstBasicBlock));
