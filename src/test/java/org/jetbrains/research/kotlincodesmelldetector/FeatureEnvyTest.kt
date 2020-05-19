@@ -19,7 +19,8 @@ internal class FeatureEnvyTest : LightJavaCodeInsightFixtureTestCase() {
         myFixture.allowTreeAccessForAllFiles()
         val project = myFixture.project
         val projectInfo = ProjectInfo(AnalysisScope(project))
-        return KotlinCodeSmellFacade.getMoveMethodRefactoringOpportunities(projectInfo, ProgressIndicatorBase())
+
+        return KotlinCodeSmellFacade.getMoveMethodRefactoringOpportunities(projectInfo, projectInfo, ProgressIndicatorBase())
     }
 
     fun testFieldAccessesCount() {

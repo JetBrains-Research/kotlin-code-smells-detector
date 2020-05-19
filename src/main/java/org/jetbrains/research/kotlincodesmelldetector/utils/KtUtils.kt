@@ -7,7 +7,6 @@ import com.intellij.psi.SmartPsiElementPointer
 import org.jetbrains.kotlin.idea.refactoring.fqName.fqName
 import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.nj2k.postProcessing.resolve
 import org.jetbrains.kotlin.nj2k.postProcessing.type
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
@@ -143,14 +142,14 @@ fun generateFullEntitySets(entities: List<KtElement>): Map<KtElement, Set<PsiEle
         body?.accept(object : PsiElementVisitor() {
             override fun visitElement(psiElement: PsiElement) {
                 if (psiElement is KtCallExpression) {
-                    val resolved = psiElement.mainReference.resolve()
+                    val resolved = psiElement.resolveToElement
                     resolved?.let { result[entity]?.add(it) }
 
                     if (resolved is KtPropertyAccessor && resolved.property.isField) {
                         result[resolved]?.add(entity)
                     }
                 } else if (psiElement is KtReferenceExpression) {
-                    val resolved = psiElement.resolve()
+                    val resolved = psiElement.resolveToElement
 
                     if (resolved is KtElement && resolved.isField) {
                         result[entity]?.add(resolved)
@@ -261,7 +260,7 @@ val KtDeclaration.referencesInBody: List<KtExpression>
                 if (element is KtCallExpression) {
                     result.add(element)
                 } else if (element is KtReferenceExpression) {
-                    val resolved = element.mainReference.resolve()
+                    val resolved = element.resolveToElement
                     if (resolved is KtElement && resolved.isPropertyOrConstructorVar) {
                         result.add(element)
                     }
