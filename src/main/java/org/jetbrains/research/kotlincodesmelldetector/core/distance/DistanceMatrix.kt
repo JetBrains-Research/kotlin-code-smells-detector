@@ -3,12 +3,26 @@ package org.jetbrains.research.kotlincodesmelldetector.core.distance
 import com.intellij.openapi.progress.ProgressIndicator
 import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.KtBlockExpression
+import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.psi.KtClass
+import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtNameReferenceExpression
+import org.jetbrains.kotlin.psi.KtNamedDeclaration
+import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtObjectDeclaration
+import org.jetbrains.kotlin.psi.KtParameter
+import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
 import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
 import org.jetbrains.kotlin.psi.psiUtil.forEachDescendantOfType
 import org.jetbrains.research.kotlincodesmelldetector.KotlinCodeSmellDetectorBundle
-import org.jetbrains.research.kotlincodesmelldetector.utils.*
+import org.jetbrains.research.kotlincodesmelldetector.utils.getConstructorType
+import org.jetbrains.research.kotlincodesmelldetector.utils.getFirstTypeArgumentType
+import org.jetbrains.research.kotlincodesmelldetector.utils.isContainer
+import org.jetbrains.research.kotlincodesmelldetector.utils.isOpen
+import org.jetbrains.research.kotlincodesmelldetector.utils.isSynchronized
+import org.jetbrains.research.kotlincodesmelldetector.utils.overridesMethod
 import java.util.TreeMap
 
 class DistanceMatrix(private val project: ProjectInfo, private val indicator: ProgressIndicator) {
@@ -95,7 +109,6 @@ class DistanceMatrix(private val project: ProjectInfo, private val indicator: Pr
                                 methodEntitySet.add(called)
                             }
                         }
-
                     }
                 }
             }
@@ -104,8 +117,8 @@ class DistanceMatrix(private val project: ProjectInfo, private val indicator: Pr
     }
 
     fun getMoveMethodCandidateRefactoringsByAccess(
-            classesToBeExamined: Set<KtClassOrObject>,
-            indicator: ProgressIndicator
+        classesToBeExamined: Set<KtClassOrObject>,
+        indicator: ProgressIndicator
     ): List<MoveMethodCandidateRefactoring> {
         val candidateRefactoringList: MutableList<MoveMethodCandidateRefactoring> = mutableListOf()
         indicator.text = KotlinCodeSmellDetectorBundle.message("feature.envy.identification.indicator")
@@ -143,10 +156,10 @@ class DistanceMatrix(private val project: ProjectInfo, private val indicator: Pr
     }
 
     private fun getCandidatesFromTargetClasses(
-            entity: KtNamedFunction,
-            accessMap: Map<KtClassOrObject, List<KtNamedDeclaration>>,
-            sourceClass: KtClassOrObject,
-            targetClasses: Set<KtClassOrObject>
+        entity: KtNamedFunction,
+        accessMap: Map<KtClassOrObject, List<KtNamedDeclaration>>,
+        sourceClass: KtClassOrObject,
+        targetClasses: Set<KtClassOrObject>
     ): List<MoveMethodCandidateRefactoring> {
         val candidates = mutableListOf<MoveMethodCandidateRefactoring>()
         val candidateTargetClasses = mutableSetOf<KtClassOrObject>()
@@ -163,7 +176,7 @@ class DistanceMatrix(private val project: ProjectInfo, private val indicator: Pr
                     val sourceClassDependencies = candidate.distinctSourceDependencies
                     val targetClassDependencies = candidate.distinctTargetDependencies
                     if (sourceClassDependencies <= maximumNumberOfSourceClassMembersAccessedByMoveMethodCandidate
-                            && sourceClassDependencies < targetClassDependencies
+                        && sourceClassDependencies < targetClassDependencies
                     ) {
                         candidates.add(candidate)
                         candidateTargetClasses.add(targetClass)
@@ -193,16 +206,16 @@ class DistanceMatrix(private val project: ProjectInfo, private val indicator: Pr
     }
 
     private fun targetClassIsInheritedByAnotherTargetClass(
-            targetClass: ClassEntity,
-            candidateTargetClasses: Set<KtClassOrObject>
+        targetClass: ClassEntity,
+        candidateTargetClasses: Set<KtClassOrObject>
     ): Boolean {
         var currentClass: KtClassOrObject? = targetClass.element
         while (currentClass != null) {
             var superClass: KtClassOrObject? = null
             for (superTypeEntry in currentClass.superTypeListEntries) {
                 superClass =
-                        superTypeEntry.typeAsUserType?.referenceExpression?.mainReference?.resolve() as? KtClassOrObject
-                                ?: continue
+                    superTypeEntry.typeAsUserType?.referenceExpression?.mainReference?.resolve() as? KtClassOrObject
+                        ?: continue
                 break
             }
             superClass?.let {

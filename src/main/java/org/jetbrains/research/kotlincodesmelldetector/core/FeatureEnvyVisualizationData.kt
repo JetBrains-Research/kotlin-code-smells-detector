@@ -17,9 +17,9 @@ import org.jetbrains.kotlin.psi.psiUtil.forEachDescendantOfType
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ClassEntity
 
 class FeatureEnvyVisualizationData(
-        private val sourceClass: ClassEntity,
-        val methodToBeMoved: KtNamedFunction,
-        private val targetClass: ClassEntity
+    private val sourceClass: ClassEntity,
+    val methodToBeMoved: KtNamedFunction,
+    private val targetClass: ClassEntity
 ) : VisualizationData {
     override val distinctSourceDependencies: Int
     override val distinctTargetDependencies: Int
@@ -45,16 +45,17 @@ class FeatureEnvyVisualizationData(
                         }
                         else -> {
                             val receiver =
-                                    if (receiverExpression is KtQualifiedExpression) {
-                                        if (receiverExpression.receiverExpression is KtThisExpression)
-                                            receiverExpression.selectorExpression else null
-                                    } else {
-                                        receiverExpression
-                                    }
+                                if (receiverExpression is KtQualifiedExpression) {
+                                    if (receiverExpression.receiverExpression is KtThisExpression)
+                                        receiverExpression.selectorExpression else null
+                                } else {
+                                    receiverExpression
+                                }
                             receiver?.mainReference?.resolve()?.let { resolvedReceiver ->
                                 if (resolvedReceiver is KtNamedDeclaration
-                                        && (resolvedReceiver.type()?.fqName == targetClass.element.fqName
-                                                || resolvedReceiver.fqName == targetClass.element.fqName)) {
+                                    && (resolvedReceiver.type()?.fqName == targetClass.element.fqName
+                                        || resolvedReceiver.fqName == targetClass.element.fqName)
+                                ) {
                                     handlePossibleTargetMember(expression)
                                 }
                             }
@@ -89,7 +90,6 @@ class FeatureEnvyVisualizationData(
                         definedSourceFields.add(called)
                     }
                 }
-
             }
         }
     }
@@ -117,6 +117,4 @@ class FeatureEnvyVisualizationData(
         }
         return false
     }
-
-
 }

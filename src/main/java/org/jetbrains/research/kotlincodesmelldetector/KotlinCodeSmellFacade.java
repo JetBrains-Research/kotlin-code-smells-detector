@@ -2,11 +2,10 @@ package org.jetbrains.research.kotlincodesmelldetector;
 
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.psi.SmartPsiElementPointer;
-import org.jetbrains.kotlin.name.FqName;
 import org.jetbrains.kotlin.psi.KtClass;
 import org.jetbrains.kotlin.psi.KtClassOrObject;
-import org.jetbrains.kotlin.psi.KtFile;
 import org.jetbrains.kotlin.psi.KtElement;
+import org.jetbrains.kotlin.psi.KtFile;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.*;
 
 import java.util.*;

@@ -5,7 +5,6 @@ import org.jetbrains.kotlin.psi.KtElement
 import java.util.ArrayList
 import java.util.HashSet
 import java.util.LinkedHashSet
-import java.util.TreeSet
 
 class ExtractClassCandidateGroup(val source: SmartPsiElementPointer<KtElement>) :
     Comparable<ExtractClassCandidateGroup?> {
