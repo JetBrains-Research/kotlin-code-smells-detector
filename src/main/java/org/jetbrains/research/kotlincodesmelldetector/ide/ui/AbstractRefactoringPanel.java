@@ -251,7 +251,6 @@ public abstract class AbstractRefactoringPanel extends JPanel {
             editor.getMarkupModel().removeAllHighlighters();
         }
         showEmptyPanel();
-        showEmptyPanel();
         calculateRefactorings();
     }
 
