@@ -363,7 +363,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
 
                 highlightPsiElement(field, openInEditor);
             }
-        });
+        };
     }
 
     private static void highlightPsiElement(PsiElement psiElement, boolean openInEditor) {

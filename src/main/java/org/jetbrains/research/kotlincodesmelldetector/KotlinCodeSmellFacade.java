@@ -1,31 +1,21 @@
 package org.jetbrains.research.kotlincodesmelldetector;
 
-import com.intellij.notification.*;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
-import com.intellij.openapi.project.ProjectManager;
 import com.intellij.psi.SmartPsiElementPointer;
-import org.jetbrains.kotlin.psi.KtClass;
-import org.jetbrains.kotlin.psi.KtClassOrObject;
 import org.jetbrains.kotlin.fir.declarations.FirFile;
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction;
 import org.jetbrains.kotlin.fir.declarations.FirVariable;
 import org.jetbrains.kotlin.fir.references.impl.FirEmptyControlFlowGraphReference;
 import org.jetbrains.kotlin.fir.resolve.dfa.FirControlFlowGraphReferenceImpl;
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.ControlFlowGraph;
+import org.jetbrains.kotlin.psi.KtClass;
+import org.jetbrains.kotlin.psi.KtClassOrObject;
 import org.jetbrains.kotlin.psi.KtElement;
-import org.jetbrains.kotlin.psi.KtFile;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.*;
-import org.jetbrains.research.kotlincodesmelldetector.core.distance.ExtractClassCandidateGroup;
-import org.jetbrains.research.kotlincodesmelldetector.core.distance.ExtractClassCandidateRefactoring;
-import org.jetbrains.research.kotlincodesmelldetector.core.distance.GodClassDistanceMatrixKt;
-import org.jetbrains.research.kotlincodesmelldetector.core.distance.ProjectInfo;
 import org.jetbrains.research.kotlincodesmelldetector.core.longmethod.*;
 
 import java.util.*;
 
-import static org.jetbrains.research.kotlincodesmelldetector.utils.ExtractUtilsKt.extractClasses;
-import static org.jetbrains.research.kotlincodesmelldetector.utils.ExtractUtilsKt.getCurrentFileOpenInEditor;
 import static org.jetbrains.research.kotlincodesmelldetector.utils.FirUtilsKt.*;
 
 public class KotlinCodeSmellFacade {
@@ -68,7 +58,8 @@ public class KotlinCodeSmellFacade {
                 distanceMatrix.getMoveMethodCandidateRefactoringsByAccess(classesToBeExamined, indicator);
         Collections.sort(moveMethodCandidateRefactorings);
         return moveMethodCandidateRefactorings;
-    // TODO implement
+    }
+
     public static Set<ASTSliceGroup> getExtractMethodRefactoringOpportunities(ProjectInfo project, ProgressIndicator indicator) {
         Set<ASTSliceGroup> extractedSliceGroups = new HashSet<>();
         FirFile firFile = getCurrentFirFileOpenInEditor(project.getProject());
@@ -77,19 +68,6 @@ public class KotlinCodeSmellFacade {
             processMethod(extractedSliceGroups, firSimpleFunction);
         }
         return extractedSliceGroups;
-    }
-
-    private static void show(String string) {
-        ApplicationManager.getApplication().invokeLater(
-                () ->
-                {
-                    Notification notification = new NotificationGroup("My notification group",
-                                                                      NotificationDisplayType.BALLOON, true)
-                            .createNotification(string, NotificationType.INFORMATION);
-                    Notifications.Bus.notify(notification, ProjectManager.getInstance().getOpenProjects()[0]);
-
-                }
-        );
     }
 
     private static void processMethod(final Set<ASTSliceGroup> extractedSliceGroups, FirSimpleFunction firSimpleFunction) {
@@ -104,34 +82,34 @@ public class KotlinCodeSmellFacade {
             for (FirVariable<?> declaration : getVariableDeclarationsInFunction(firSimpleFunction, cfg)) {
                 //stringBuilder.append(declaration.getName().toString() + ' ');
                 PDGSliceUnionCollection sliceUnionCollection = new PDGSliceUnionCollection(firSimpleFunction, cfg, declaration);
-//                double sumOfExtractedStatementsInGroup = 0.0;
-//                double sumOfDuplicatedStatementsInGroup = 0.0;
-//                double sumOfDuplicationRatioInGroup = 0.0;
-//                int maximumNumberOfExtractedStatementsInGroup = 0;
-//                int groupSize = sliceUnionCollection.getSliceUnions().size();
+                //                double sumOfExtractedStatementsInGroup = 0.0;
+                //                double sumOfDuplicatedStatementsInGroup = 0.0;
+                //                double sumOfDuplicationRatioInGroup = 0.0;
+                //                int maximumNumberOfExtractedStatementsInGroup = 0;
+                //                int groupSize = sliceUnionCollection.getSliceUnions().size();
                 ASTSliceGroup sliceGroup = new ASTSliceGroup();
                 for (BasicBlock basicBlock : sliceUnionCollection.getBasicBlocks()) {
                     stringBuilder.append(basicBlock.getLeader().toString());
                 }
                 for (PDGSliceUnion sliceUnion : sliceUnionCollection.getSliceUnions()) {
                     ASTSlice slice = new ASTSlice(sliceUnion);
-                 //   if (true) { //!slice.isVariableCriterionDeclarationStatementIsDeeperNestedThanExtractedMethodInvocationInsertionStatement()) {
-//                        int numberOfExtractedStatements = slice.getNumberOfSliceStatements();
-//                        int numberOfDuplicatedStatements = slice.getNumberOfDuplicatedStatements();
-//                        double duplicationRatio = (double) numberOfDuplicatedStatements / (double) numberOfExtractedStatements;
-//                        sumOfExtractedStatementsInGroup += numberOfExtractedStatements;
-//                        sumOfDuplicatedStatementsInGroup += numberOfDuplicatedStatements;
-//                        sumOfDuplicationRatioInGroup += duplicationRatio;
-//                        if (numberOfExtractedStatements > maximumNumberOfExtractedStatementsInGroup)
-//                            maximumNumberOfExtractedStatementsInGroup = numberOfExtractedStatements;
-                        sliceGroup.addCandidate(slice);
-                    }
+                    //   if (true) { //!slice.isVariableCriterionDeclarationStatementIsDeeperNestedThanExtractedMethodInvocationInsertionStatement()) {
+                    //                        int numberOfExtractedStatements = slice.getNumberOfSliceStatements();
+                    //                        int numberOfDuplicatedStatements = slice.getNumberOfDuplicatedStatements();
+                    //                        double duplicationRatio = (double) numberOfDuplicatedStatements / (double) numberOfExtractedStatements;
+                    //                        sumOfExtractedStatementsInGroup += numberOfExtractedStatements;
+                    //                        sumOfDuplicatedStatementsInGroup += numberOfDuplicatedStatements;
+                    //                        sumOfDuplicationRatioInGroup += duplicationRatio;
+                    //                        if (numberOfExtractedStatements > maximumNumberOfExtractedStatementsInGroup)
+                    //                            maximumNumberOfExtractedStatementsInGroup = numberOfExtractedStatements;
+                    sliceGroup.addCandidate(slice);
+                }
 
                 if (!sliceGroup.getCandidates().isEmpty()) {
-//                    sliceGroup.setAverageNumberOfExtractedStatementsInGroup(sumOfExtractedStatementsInGroup / (double) groupSize);
-//                    sliceGroup.setAverageNumberOfDuplicatedStatementsInGroup(sumOfDuplicatedStatementsInGroup / (double) groupSize);
-//                    sliceGroup.setAverageDuplicationRatioInGroup(sumOfDuplicationRatioInGroup / (double) groupSize);
-//                    sliceGroup.setMaximumNumberOfExtractedStatementsInGroup(maximumNumberOfExtractedStatementsInGroup);
+                    //                    sliceGroup.setAverageNumberOfExtractedStatementsInGroup(sumOfExtractedStatementsInGroup / (double) groupSize);
+                    //                    sliceGroup.setAverageNumberOfDuplicatedStatementsInGroup(sumOfDuplicatedStatementsInGroup / (double) groupSize);
+                    //                    sliceGroup.setAverageDuplicationRatioInGroup(sumOfDuplicationRatioInGroup / (double) groupSize);
+                    //                    sliceGroup.setMaximumNumberOfExtractedStatementsInGroup(maximumNumberOfExtractedStatementsInGroup);
                     extractedSliceGroups.add(sliceGroup);
                 }
             }
@@ -165,7 +143,6 @@ public class KotlinCodeSmellFacade {
             //                    sliceGroup.setMaximumNumberOfExtractedStatementsInGroup(maximumNumberOfExtractedStatementsInGroup);
             //                    extractedSliceGroups.add(sliceGroup);
             //                }
-            show(stringBuilder.toString());
         }
     }
 }

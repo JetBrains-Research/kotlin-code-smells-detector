@@ -1,15 +1,9 @@
 package org.jetbrains.research.kotlincodesmelldetector.utils
 
-import com.intellij.openapi.project.Project
-import com.intellij.openapi.ui.Messages
-import org.jetbrains.kotlin.fir.declarations.FirRegularClass
-import com.intellij.psi.*
-import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction
-import org.jetbrains.kotlin.fir.java.FirProjectSessionProvider
-import org.jetbrains.kotlin.fir.resolve.dfa.FirControlFlowGraphReferenceImpl
-import org.jetbrains.kotlin.fir.resolve.transformers.FirTotalResolveTransformer
-import org.jetbrains.kotlin.idea.fir.FirModuleResolveStateImpl
-import org.jetbrains.kotlin.idea.fir.getOrBuildFir
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiElementVisitor
+import com.intellij.psi.SmartPointerManager
+import com.intellij.psi.SmartPsiElementPointer
 import org.jetbrains.kotlin.idea.refactoring.fqName.fqName
 import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.name.FqName
@@ -31,36 +25,6 @@ import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtThisExpression
 import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
-import org.jetbrains.kotlin.nj2k.postProcessing.resolve
-import org.jetbrains.kotlin.psi.*
-
-fun showCfg(project: Project) {
-    val ktFile = getCurrentFileOpenInEditor(project)
-    val f = FirTotalResolveTransformer()
-    val firFile = ktFile?.getOrBuildFir(FirModuleResolveStateImpl(FirProjectSessionProvider(project)))!!
-    f.processFiles(listOf(firFile))
-    val firSimpleFunction = firFile.declarations.filterIsInstance<FirSimpleFunction>()
-            .filter { it.controlFlowGraphReference is FirControlFlowGraphReferenceImpl }[0]
-    val firControlFlowGraphReferenceImpl = firSimpleFunction.controlFlowGraphReference as FirControlFlowGraphReferenceImpl
-    val stringBuilder = StringBuilder()
-    // firControlFlowGraphReferenceImpl.controlFlowGraph.render()
-//    for (node in firControlFlowGraphReferenceImpl.controlFlowGraph.nodes) {
-//        stringBuilder.append(node.toString())
-//    }
-    // firControlFlowGraphReferenceImpl.controlFlowGraph.subGraphs();
-//    ApplicationManager.getApplication().invokeLater {
-//        val notification: Notification = NotificationGroup("My notification group",
-//                NotificationDisplayType.BALLOON, true).createNotification(
-//                firControlFlowGraphReferenceImpl.controlFlowGraph.subGraphs.size.toString(), NotificationType.INFORMATION)
-//        val projects = ProjectManager.getInstance().openProjects
-//        Notifications.Bus.notify(notification, projects[0])
-//    }
-    for (node in firControlFlowGraphReferenceImpl.controlFlowGraph.nodes) {
-        stringBuilder.append(node.toString())
-        stringBuilder.append("\n")
-    }
-    Messages.showInfoMessage(stringBuilder.toString(), "cfg")
-}
 
 /**
  * If this is KtFile, returns all top-level functions and properties.
@@ -89,16 +53,10 @@ val KtElement.declaredElements: List<KtDeclaration>
  */
 val KtElement?.methods: List<KtDeclaration>
     get() {
-<<<<<<< HEAD
-        val result = this.declaredElements
-                .filter { ktDeclaration -> ktDeclaration.isMethod }
-                .filter { ktDeclaration -> ktDeclaration.correctMethod }
-                .toMutableList()
-=======
-        val result = this?.declarations
-                ?.filter { ktDeclaration -> ktDeclaration is KtFunction || ktDeclaration is KtProperty && !ktDeclaration.isField }
+        val result = this?.declaredElements
+                ?.filter { ktDeclaration -> ktDeclaration.isMethod }
+                ?.filter { ktDeclaration -> ktDeclaration.correctMethod }
                 ?.toMutableList()
->>>>>>> 14552d0... it works
                 ?: mutableListOf()
 
         if (this is KtClassOrObject) {
@@ -113,16 +71,9 @@ val KtElement?.methods: List<KtDeclaration>
  */
 val KtElement?.fields: List<KtDeclaration>
     get() {
-<<<<<<< HEAD
-        return this.declaredElements
-                .filter { ktDeclaration -> ktDeclaration.isField }
+        return this?.declaredElements
+                ?.filter { ktDeclaration -> ktDeclaration.isField }
                 ?: listOf()
-=======
-
-        return this?.declarations
-                ?.filter { ktDeclaration -> ktDeclaration is KtProperty && ktDeclaration.isField }
-                ?.map { ktDeclaration -> ktDeclaration as KtProperty }?.toMutableList() ?: mutableListOf()
->>>>>>> 14552d0... it works
     }
 
 /**
@@ -184,25 +135,25 @@ fun generateFullEntitySets(entities: List<KtElement>): Map<KtElement, Set<PsiEle
     val result = HashMap<KtElement, MutableSet<PsiElement>>()
     for (entity in entities) {
         result[entity] = mutableSetOf()
-        result[entity].add(entity)
+        result[entity]?.add(entity)
     }
 
     fun entityAccept(entity: KtElement, body: KtElement?) {
-        body.accept(object : PsiElementVisitor() {
+        body?.accept(object : PsiElementVisitor() {
             override fun visitElement(psiElement: PsiElement) {
                 if (psiElement is KtCallExpression) {
                     val resolved = psiElement.resolveToElement
-                    resolved?.let { result[entity].add(it) }
+                    resolved?.let { result[entity]?.add(it) }
 
                     if (resolved is KtPropertyAccessor && resolved.property.isField) {
-                        result[resolved].add(entity)
+                        result[resolved]?.add(entity)
                     }
                 } else if (psiElement is KtReferenceExpression) {
                     val resolved = psiElement.resolveToElement
 
                     if (resolved is KtElement && resolved.isField) {
-                        result[entity].add(resolved)
-                        result[resolved].add(entity)
+                        result[entity]?.add(resolved)
+                        result[resolved]?.add(entity)
                     }
                 }
 
@@ -230,7 +181,7 @@ val KtExpression.resolveToElement: PsiElement?
     get() {
         return when (this) {
             is KtCallExpression -> {
-                calleeExpression.mainReference.resolve()
+                calleeExpression?.mainReference?.resolve()
             }
 
             is KtReferenceExpression -> {
@@ -250,7 +201,6 @@ fun usedThroughThisReference(ktExpression: KtExpression): Boolean {
     //TODO test
     val resolvedElement = ktExpression.resolveToElement
 
-<<<<<<< HEAD
     return when {
         resolvedElement !is KtFunction && resolvedElement !is KtProperty && resolvedElement !is KtParameter -> {
             false
@@ -265,13 +215,6 @@ fun usedThroughThisReference(ktExpression: KtExpression): Boolean {
         resolvedElement !is KtElement || resolvedElement.classContext != ktExpression.classContext -> {
             false
         }
-=======
-    if (resolvedParent is KtFile
-            || resolvedParent is KtObjectDeclaration && resolvedParent.isCompanion()
-            || resolvedParent is PsiMember && resolvedParent.modifierList?.hasExplicitModifier(PsiModifier.STATIC) == true) {
-        return false
-    }
->>>>>>> 14552d0... it works
 
         else -> {
             val parent = ktExpression.parent
@@ -330,10 +273,10 @@ val KtDeclaration.referencesInBody: List<KtExpression>
         }
 
         if (this is KtFunction) {
-            this.bodyExpression.accept(visitor)
+            this.bodyExpression?.accept(visitor)
         } else if (this is KtProperty) {
             for (accessor in this.accessors) {
-                accessor.bodyExpression.accept(visitor)
+                accessor.bodyExpression?.accept(visitor)
             }
         }
 
@@ -342,10 +285,10 @@ val KtDeclaration.referencesInBody: List<KtExpression>
 
 val KtNamedDeclaration.signature: String?
     get() {
-        val fqName = this.fqName.asString() ?: return null
+        val fqName = this.fqName?.asString() ?: return null
         if (this is KtNamedFunction) {
             val parameters = this.valueParameters
-                    .map { it.type().toString() }
+                    .map { it.type()?.toString() }
                     .joinToString(", ", "(", ")")
             return fqName + parameters
         }
@@ -365,9 +308,9 @@ fun isContainer(type: FqName): Boolean {
 }
 
 fun getConstructorType(declaration: KtNamedDeclaration): FqName? {
-    return declaration.type().fqName
+    return declaration.type()?.fqName
 }
 
 fun getFirstTypeArgumentType(declaration: KtNamedDeclaration): FqName? {
-    return declaration.type().arguments.getOrNull(0).type.constructor.declarationDescriptor.fqNameOrNull()
+    return declaration.type()?.arguments?.getOrNull(0)?.type?.constructor?.declarationDescriptor?.fqNameOrNull()
 }
