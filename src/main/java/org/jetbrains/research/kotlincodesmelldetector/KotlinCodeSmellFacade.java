@@ -15,10 +15,9 @@ import static org.jetbrains.research.kotlincodesmelldetector.utils.ExtractUtilsK
 
 public class KotlinCodeSmellFacade {
     public static TreeSet<ExtractClassCandidateGroup> getExtractClassRefactoringOpportunities(ProjectInfo project, ProgressIndicator indicator) {
-        KtFile ktFile = getCurrentFileOpenInEditor(project.getProject());
-        List<KtElement> ktClasses = extractClasses(ktFile);
+        List<SmartPsiElementPointer<KtElement>> classes = project.getClasses();
 
-        List<ExtractClassCandidateRefactoring> extractClassCandidateList = new ArrayList<>(GodClassDistanceMatrixKt.getExtractClassCandidateRefactorings(project, ktClasses, indicator));
+        List<ExtractClassCandidateRefactoring> extractClassCandidateList = new ArrayList<>(GodClassDistanceMatrixKt.getExtractClassCandidateRefactorings(project, classes, indicator));
 
         HashMap<SmartPsiElementPointer<KtElement>, ExtractClassCandidateGroup> groupedBySourceClassMap = new HashMap<>();
         for (ExtractClassCandidateRefactoring candidate : extractClassCandidateList) {

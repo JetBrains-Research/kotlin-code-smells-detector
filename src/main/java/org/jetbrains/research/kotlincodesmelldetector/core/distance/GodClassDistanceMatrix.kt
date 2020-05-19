@@ -1,6 +1,7 @@
 package org.jetbrains.research.kotlincodesmelldetector.core.distance
 
 import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.psi.SmartPsiElementPointer
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.research.kotlincodesmelldetector.utils.fields
@@ -35,14 +36,15 @@ fun getJaccardDistanceMatrix(entities: List<KtElement>): Array<DoubleArray> {
 
 fun getExtractClassCandidateRefactorings(
     projectInfo: ProjectInfo,
-    classesToBeExamined: List<KtElement>,
+    classesToBeExamined: MutableList<SmartPsiElementPointer<KtElement>>,
     indicator: ProgressIndicator
-): List<ExtractClassCandidateRefactoring> {
+): MutableList<ExtractClassCandidateRefactoring> {
     val candidateList: MutableList<ExtractClassCandidateRefactoring> = mutableListOf()
 
     indicator.text = "Identification of Extract Class refactoring opportunities"
     indicator.fraction = 0.0
-    for (sourceClass in classesToBeExamined) {
+    for (sourceClassPointer in classesToBeExamined) {
+        val sourceClass = sourceClassPointer.element
         if (classIsBigEnough(sourceClass)) {
             val entities = mutableListOf<KtDeclaration>()
             entities.addAll(sourceClass.fields)
@@ -56,7 +58,7 @@ fun getExtractClassCandidateRefactorings(
                 processedClusters += 1
                 indicator.fraction = processedClusters.toDouble() / clusters.size
                 val candidate =
-                    ExtractClassCandidateRefactoring(projectInfo, sourceClass.toPointer(), cluster.entities)
+                    ExtractClassCandidateRefactoring(projectInfo, sourceClassPointer, cluster.entities)
 
                 if (debugMode) {
                     candidateList.add(candidate)
