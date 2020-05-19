@@ -5,6 +5,7 @@ import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.research.kotlincodesmelldetector.utils.referencesInBody
+import org.jetbrains.research.kotlincodesmelldetector.utils.resolveToElement
 import org.jetbrains.research.kotlincodesmelldetector.utils.usedThroughThisReference
 
 class GodClassVisualizationData(
@@ -47,7 +48,7 @@ class GodClassVisualizationData(
         }
 
         for (method in extractedFunctions) {
-            if (method == invocation.mainReference.resolve()) {
+            if (method == invocation.resolveToElement) {
                 return true
             }
         }
@@ -60,7 +61,7 @@ class GodClassVisualizationData(
         extractedProperties: Set<KtDeclaration>
     ): Boolean {
         for (field in extractedProperties) {
-            if (field == access.mainReference?.resolve()) {
+            if (field == access.resolveToElement) {
                 return true
             }
         }
