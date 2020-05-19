@@ -16,8 +16,10 @@ class RefactoringsToolWindowFactory implements ToolWindowFactory {
         ContentManager contentManager = toolWindow.getContentManager();
         Content moveMethodPanel = contentManager.getFactory().createContent(new MoveMethodPanel(project), KotlinCodeSmellDetectorBundle.message("feature.envy.smell.name"), false);
         Content godClassPanel = contentManager.getFactory().createContent(new GodClassPanel(project), KotlinCodeSmellDetectorBundle.message("god.class.smell.name"), false);
+        Content extractMethodPanel = contentManager.getFactory().createContent(new ExtractMethodPanel(new AnalysisScope(project)), KotlinCodeSmellDetectorBundle.message("long.method.smell.name"), false);
         contentManager.addContent(moveMethodPanel);
         contentManager.addContent(godClassPanel);
+        contentManager.addContent(extractMethodPanel);
     }
 
 }
