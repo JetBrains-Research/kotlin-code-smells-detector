@@ -28,7 +28,6 @@ import com.intellij.psi.util.PsiModificationTracker;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.ScrollPaneFactory;
-import com.intellij.ui.components.JBPanel;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.treeStructure.treetable.TreeTable;
 import com.intellij.ui.treeStructure.treetable.TreeTableTree;
@@ -56,7 +55,7 @@ import java.util.List;
 
 public abstract class AbstractRefactoringPanel extends JPanel {
     private static final NotificationGroup NOTIFICATION_GROUP =
-            new NotificationGroup(KotlinCodeSmellDetectorBundle.message("kotlincodesmelldetector"), NotificationDisplayType.STICKY_BALLOON, true);
+            new NotificationGroup(KotlinCodeSmellDetectorBundle.message("kotlin.code.smell.detector"), NotificationDisplayType.STICKY_BALLOON, true);
     private final String detectIndicatorStatusTextKey;
     private final AbstractTreeTableModel model;
     private final TreeTable treeTable;
