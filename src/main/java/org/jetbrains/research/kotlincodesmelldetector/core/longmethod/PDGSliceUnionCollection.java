@@ -2,6 +2,8 @@ package org.jetbrains.research.kotlincodesmelldetector.core.longmethod;
 
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction;
 import org.jetbrains.kotlin.fir.declarations.FirVariable;
+import org.jetbrains.kotlin.fir.expressions.FirVariableAssignment;
+import org.jetbrains.kotlin.fir.references.FirResolvedNamedReference;
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.CFGNode;
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.ControlFlowGraph;
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.EnterNodeMarker;
@@ -99,7 +101,14 @@ public class PDGSliceUnionCollection {
 
     // TODO handle class fields
     private boolean isNodeDefinesButNotDeclaresVariable(CFGNode<?> node, FirVariable<?> variable) {
-        return node instanceof VariableAssignmentNode;
+        if (node instanceof VariableAssignmentNode) {
+            FirVariableAssignment variableAssignment = ((VariableAssignmentNode) node).getFir();
+            if (variableAssignment.getLValue() instanceof FirResolvedNamedReference) {
+                FirResolvedNamedReference lValue = (FirResolvedNamedReference) variableAssignment.getLValue();
+                return lValue.getName().equals(variable.getName());
+            }
+        }
+        return false;
     }
 
 
