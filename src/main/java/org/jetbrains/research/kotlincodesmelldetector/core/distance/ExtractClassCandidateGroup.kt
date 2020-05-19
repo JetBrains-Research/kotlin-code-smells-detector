@@ -52,6 +52,7 @@ class ExtractClassCandidateGroup(val source: SmartPsiElementPointer<KtElement>) 
             tempCandidates.removeAll(candidatesToBeRemoved)
             extractedConcepts.add(newConcept)
         }
+
         findConceptTerms()
     }
 
@@ -69,11 +70,9 @@ class ExtractClassCandidateGroup(val source: SmartPsiElementPointer<KtElement>) 
             return 1
         }
 
-        val thisSet = TreeSet(_candidates)
-        val otherSet = TreeSet(other._candidates)
-        val thisFirst = thisSet.first()
-        val otherFirst = otherSet.first()
-        val comparison = thisFirst.compareTo(otherFirst)
+        val thisMinimum = this._candidates.min()
+        val otherMinimum = other._candidates.min()
+        val comparison = compareValues(thisMinimum, otherMinimum)
         return if (comparison != 0) {
             comparison
         } else {

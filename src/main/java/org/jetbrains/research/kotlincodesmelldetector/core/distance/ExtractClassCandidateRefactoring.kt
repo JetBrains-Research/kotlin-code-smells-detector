@@ -32,8 +32,7 @@ class ExtractClassCandidateRefactoring(
 
     private val leaveDelegate: Map<SmartPsiElementPointer<out KtDeclaration>, Boolean>
 
-    var defaultTargetClassName: String
-        private set
+    val defaultTargetClassName: String
 
     private val visualizationData: GodClassVisualizationData
 
@@ -121,14 +120,14 @@ class ExtractClassCandidateRefactoring(
             }
 
             return extractedEntities.size > 2 && methodCounter != 0 && validRemainingMethodsInSourceClass()
-                && !visualizationData.containsNonAccessedPropertyInExtractedClass
         }
 
     private fun KtDeclaration.methodNotExtractable(): Boolean {
         return this.isSynchronized || this.containsSuperMethodInvocation ||
             this.isAbstract || this.containsFieldAccessOfEnclosingClass
+
         /*
-        TODO there was a check for overriden method. Probably we shoudln't care about this, because we can just leave a delegate
+        TODO there was a check for overriding methods. Probably we shouldn't care about this, because we can just leave a delegate
         for such a case.
 
          this.overridesMethod
@@ -213,13 +212,16 @@ class ExtractClassCandidateRefactoring(
 
     init {
         leaveDelegate = LinkedHashMap()
-        defaultTargetClassName = sourceClass.element!!.name + "Product"
+
+        var defaultTargetClassName = sourceClass.element?.name + "Product"
         for (ktClass in projectInfo.classes) {
-            if (ktClass.element!!.name == defaultTargetClassName) {
+            if (ktClass.element?.name == defaultTargetClassName) {
                 defaultTargetClassName += "2"
                 break
             }
         }
+        this.defaultTargetClassName = defaultTargetClassName
+
         topics = ArrayList()
 
         visualizationData = GodClassVisualizationData(

@@ -16,11 +16,10 @@ class ProjectInfo(val scope: AnalysisScope) {
     init {
         ktFiles = extractFiles(project).filter { file -> scope.contains(file) }.map { file -> file.toPointer() }
 
-        val classes = mutableListOf<SmartPsiElementPointer<KtElement>>()
+        this.classes = mutableListOf()
         ktFiles.forEach { file ->
             classes.addAll(
                 extractClasses(file.element).map { clazz -> clazz.toPointer() })
         }
-        this.classes = classes
     }
 }

@@ -12,7 +12,7 @@ import org.jetbrains.research.kotlincodesmelldetector.utils.*
 import java.util.TreeMap
 
 class DistanceMatrix(private val project: ProjectInfo, private val indicator: ProgressIndicator) {
-    val classes: MutableMap<KtClassOrObject, ClassEntity> = mutableMapOf()
+    private val classes: MutableMap<KtClassOrObject, ClassEntity> = mutableMapOf()
     private val classFqNames: MutableSet<FqName> = mutableSetOf()
     private val entityToClassMap = mutableMapOf<KtNamedDeclaration, MutableList<KtClassOrObject>>()
     private val entityMap = mutableMapOf<KtNamedDeclaration, MutableSet<KtNamedDeclaration>>()

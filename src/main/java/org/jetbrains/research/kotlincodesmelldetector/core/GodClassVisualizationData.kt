@@ -16,12 +16,6 @@ class GodClassVisualizationData(
 
     override val distinctSourceDependencies: Int
 
-    val containsNonAccessedPropertyInExtractedClass: Boolean
-        get() {
-            //TODO
-            return false
-        }
-
     init {
         var distinctTargetDependencies = 0
         var distinctSourceDependencies = 0
