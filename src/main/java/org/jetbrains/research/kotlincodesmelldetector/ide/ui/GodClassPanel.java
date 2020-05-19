@@ -21,8 +21,8 @@ public class GodClassPanel extends AbstractRefactoringPanel {
 
     private static final int REFACTOR_DEPTH = 4;
 
-    public GodClassPanel(@NotNull AnalysisScope scope) {
-        super(scope,
+    public GodClassPanel(@NotNull Project project) {
+        super(project,
                 "god.class.identification.indicator",
                 new ExtractClassRefactoringType(),
                 new GodClassTreeTableModel(Collections.emptyList(), COLUMN_NAMES),
@@ -32,8 +32,6 @@ public class GodClassPanel extends AbstractRefactoringPanel {
     @Override
     protected void doRefactor(AbstractCandidateRefactoring candidateRefactoring) {
         AbstractExtractClassRefactoring abstractRefactoring = (AbstractExtractClassRefactoring) getAbstractRefactoringFromAbstractCandidateRefactoring(candidateRefactoring);
-
-        Project project = scope.getProject();
 
         TransactionGuard.getInstance().submitTransactionAndWait(() -> {
             removeHighlighters(project);

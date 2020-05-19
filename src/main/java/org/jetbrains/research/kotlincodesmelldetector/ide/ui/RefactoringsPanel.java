@@ -22,7 +22,7 @@ class RefactoringsPanel extends SimpleToolWindowPanel {
      */
     private void addRefactoringPanels(Project project) {
         JTabbedPane jTabbedPane = new JBTabbedPane();
-        jTabbedPane.add(KotlinCodeSmellDetectorBundle.message("god.class.smell.name"), new GodClassPanel(new AnalysisScope(project)));
+        jTabbedPane.add(KotlinCodeSmellDetectorBundle.message("god.class.smell.name"), new GodClassPanel(project));
         jTabbedPane.add(KotlinCodeSmellDetectorBundle.message("feature.envy.smell.name"), new MoveMethodPanel(project));
         setContent(jTabbedPane);
     }

@@ -58,14 +58,13 @@ public abstract class AbstractRefactoringPanel extends JPanel {
     private static final NotificationGroup NOTIFICATION_GROUP =
             new NotificationGroup(KotlinCodeSmellDetectorBundle.message("kotlincodesmelldetector"), NotificationDisplayType.STICKY_BALLOON, true);
     private final String detectIndicatorStatusTextKey;
-    @NotNull
-    protected final AnalysisScope scope;
     private final AbstractTreeTableModel model;
     private final TreeTable treeTable;
     private final ActionButton doRefactorButton;
     private final ActionButton refreshButton;
     private final ActionButton exportButton;
     private final ScopeChooserComboBox scopeChooserComboBox;
+
     private JScrollPane scrollPane = new JBScrollPane();
     private final JLabel refreshLabel = new JLabel(
             KotlinCodeSmellDetectorBundle.message("press.refresh.to.find.refactoring.opportunities"),
@@ -75,12 +74,18 @@ public abstract class AbstractRefactoringPanel extends JPanel {
     private static Notification errorNotification;
     private final int refactorDepth;
 
-    public AbstractRefactoringPanel(@NotNull AnalysisScope scope,
+    protected final Project project;
+
+    private AnalysisScope getScope() {
+        return scopeChooserComboBox.getScope();
+    }
+
+    public AbstractRefactoringPanel(@NotNull Project project,
                                     String detectIndicatorStatusTextKey,
                                     RefactoringType refactoringType,
                                     AbstractTreeTableModel model,
                                     int refactorDepth) {
-        this.scope = scope;
+        this.project = project;
         this.detectIndicatorStatusTextKey = detectIndicatorStatusTextKey;
         this.refactoringType = refactoringType;
         this.model = model;
@@ -89,7 +94,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
         this.doRefactorButton = new ActionButton(refactorAction(), new Presentation(KotlinCodeSmellDetectorBundle.message("refactor.button")), BorderLayout.EAST, new Dimension(26, 24));
         this.refreshButton = new ActionButton(refreshAction(), new Presentation(KotlinCodeSmellDetectorBundle.message("refresh.button")), BorderLayout.EAST, new Dimension(26, 24));
         this.exportButton = new ActionButton(exportAction(), new Presentation(KotlinCodeSmellDetectorBundle.message("export")), BorderLayout.EAST, new Dimension(26, 24));
-        this.scopeChooserComboBox = new ScopeChooserComboBox(scope);
+        this.scopeChooserComboBox = new ScopeChooserComboBox(new AnalysisScope(project));
         refreshLabel.setForeground(JBColor.GRAY);
         setLayout(new BorderLayout());
         setupGUI();
@@ -185,7 +190,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
      * Adds a listener that invalidates found refactoring opportunities if the structure of PSI is changed.
      */
     private void registerPsiModificationListener() {
-        MessageBus projectMessageBus = scope.getProject().getMessageBus();
+        MessageBus projectMessageBus = getScope().getProject().getMessageBus();
         projectMessageBus.connect().subscribe(PsiModificationTracker.TOPIC, () -> ApplicationManager.getApplication().invokeLater(this::showRefreshingProposal));
     }
 
@@ -240,7 +245,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
      * Refreshes the panel with suggestions.
      */
     private void refreshPanel() {
-        Editor editor = FileEditorManager.getInstance(scope.getProject()).getSelectedTextEditor();
+        Editor editor = FileEditorManager.getInstance(getScope().getProject()).getSelectedTextEditor();
         if (editor != null) {
             editor.getMarkupModel().removeAllHighlighters();
         }
@@ -252,9 +257,9 @@ public abstract class AbstractRefactoringPanel extends JPanel {
      * Calculates suggestions for whole project.
      */
     private void calculateRefactorings() {
-        ProjectInfo projectInfo = new ProjectInfo(scope);
+        ProjectInfo projectInfo = new ProjectInfo(getScope());
 
-        final Task.Backgroundable backgroundable = new Task.Backgroundable(scope.getProject(),
+        final Task.Backgroundable backgroundable = new Task.Backgroundable(getScope().getProject(),
                 KotlinCodeSmellDetectorBundle.message(detectIndicatorStatusTextKey), true) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
@@ -276,7 +281,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
             }
         };
 
-        runAfterCompilationCheck(backgroundable, scope.getProject(), projectInfo);
+        runAfterCompilationCheck(backgroundable, getScope().getProject(), projectInfo);
     }
 
     /**
