@@ -1,5 +1,6 @@
 package org.jetbrains.research.kotlincodesmelldetector.core.longmethod;
 
+import com.intellij.openapi.project.Project;
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction;
 import org.jetbrains.kotlin.fir.declarations.FirVariable;
 import org.jetbrains.kotlin.fir.expressions.FirVariableAssignment;
@@ -15,6 +16,7 @@ public class PDGSliceUnionCollection {
     private final Map<BasicBlock, PDGSliceUnion> sliceUnionMap;
     private final BasicBlockCFG basicBlockCFG;
     private final FirSimpleFunction firSimpleFunction;
+
 
     public PDGSliceUnionCollection(FirSimpleFunction firSimpleFunction, ControlFlowGraph cfg, FirVariable<?> variable) {
         this.sliceUnionMap = new LinkedHashMap<>();

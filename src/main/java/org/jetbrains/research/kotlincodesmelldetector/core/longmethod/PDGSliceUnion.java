@@ -1,5 +1,6 @@
 package org.jetbrains.research.kotlincodesmelldetector.core.longmethod;
 
+import com.intellij.openapi.project.Project;
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction;
 import org.jetbrains.kotlin.fir.declarations.FirVariable;
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.CFGNode;
@@ -12,6 +13,7 @@ public class PDGSliceUnion {
     private final List<CFGNode<?>> sliceNodes;
     private final FirSimpleFunction function;
     private final FirVariable<?> localVariableCriterion;
+
 
     public PDGSliceUnion(FirSimpleFunction firSimpleFunction, ControlFlowGraph cfg, BasicBlock basicBlock, Set<CFGNode<?>> nodeCriteria, FirVariable<?> localVariableCriterion) {
         this.cfg = cfg;

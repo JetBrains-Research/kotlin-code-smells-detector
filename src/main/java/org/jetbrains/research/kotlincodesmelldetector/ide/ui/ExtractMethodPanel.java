@@ -15,6 +15,7 @@ import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
+import com.intellij.psi.PsiElement;
 import com.intellij.refactoring.HelpID;
 import com.intellij.refactoring.extractMethod.ExtractMethodHandler;
 import com.intellij.refactoring.extractMethod.PrepareFailedException;
@@ -27,6 +28,9 @@ import com.intellij.ui.treeStructure.treetable.TreeTableTree;
 import com.intellij.util.SmartList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.kotlin.fir.FirElement;
+import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction;
+import org.jetbrains.kotlin.fir.expressions.FirStatement;
 import org.jetbrains.research.kotlincodesmelldetector.KotlinCodeSmellDetectorBundle;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ProjectInfo;
 import org.jetbrains.research.kotlincodesmelldetector.core.longmethod.ASTSlice;
@@ -36,6 +40,7 @@ import org.jetbrains.research.kotlincodesmelldetector.ide.ui.ExtractMethodCandid
 import org.jetbrains.research.kotlincodesmelldetector.ide.ui.ExtractMethodTreeTableModel;
 import org.jetbrains.research.kotlincodesmelldetector.ide.ui.listeners.ElementSelectionListener;
 import org.jetbrains.research.kotlincodesmelldetector.ide.ui.listeners.EnterKeyListener;
+import org.jetbrains.research.kotlincodesmelldetector.utils.FirUtilsKt;
 
 import javax.swing.*;
 import javax.swing.tree.TreePath;
@@ -89,8 +94,8 @@ class ExtractMethodPanel extends JPanel {
         treeTable.setTreeCellRenderer(new ExtractMethodCandidatesTreeCellRenderer());
         treeTable.getColumnModel().getColumn(0).setPreferredWidth(800);
         treeTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-//        treeTable.addMouseListener((DoubleClickListener) this::openMethodDefinition);
-//        treeTable.addKeyListener((EnterKeyListener) this::openMethodDefinition);
+       // treeTable.addMouseListener((DoubleClickListener) this::openMethodDefinition);
+        treeTable.addKeyListener((EnterKeyListener) this::openMethodDefinition);
         treeTable.getTree().addTreeSelectionListener((ElementSelectionListener) this::enableRefactorButtonIfAnySelected);
         refreshLabel.setForeground(JBColor.GRAY);
         scrollPane = ScrollPaneFactory.createScrollPane(treeTable);
@@ -240,21 +245,21 @@ class ExtractMethodPanel extends JPanel {
         refreshButton.setEnabled(true);
     }
 
-//    /**
-//     * Opens the definition of appropriate method for the selected suggestion by double-clicking or Enter key pressing.
-//     */
-//    private void openMethodDefinition(InputEvent e) {
-//        TreeTableTree treeTableTree = treeTable.getTree();
-//        TreePath selectedPath = treeTableTree.getSelectionModel().getSelectionPath();
-//        if (selectedPath != null) {
-//            Object o = selectedPath.getLastPathComponent();
-//            if (o instanceof ASTSlice) {
-//                openDefinition(((ASTSlice) o).getSourceMethodDeclaration(), scope, (ASTSlice) o);
-//            } else if (o instanceof ExtractMethodCandidateGroup) {
-//                expandOrCollapsePath(e, treeTableTree, selectedPath);
-//            }
-//        }
-//    }
+    /**
+     * Opens the definition of appropriate method for the selected suggestion by double-clicking or Enter key pressing.
+     */
+    private void openMethodDefinition(InputEvent e) {
+        TreeTableTree treeTableTree = treeTable.getTree();
+        TreePath selectedPath = treeTableTree.getSelectionModel().getSelectionPath();
+        if (selectedPath != null) {
+            Object o = selectedPath.getLastPathComponent();
+            if (o instanceof ASTSlice) {
+                openDefinition(((ASTSlice) o).getSourceMethodDeclaration(), scope, (ASTSlice) o);
+            } else if (o instanceof ExtractMethodCandidateGroup) {
+                expandOrCollapsePath(e, treeTableTree, selectedPath);
+            }
+        }
+    }
 
     /**
      * Checks that the slice can be extracted into a separate method without compilation errors.
@@ -337,41 +342,46 @@ class ExtractMethodPanel extends JPanel {
         };
     }
 
-//    /**
-//     * Opens definition of method and highlights statements, which should be extracted.
-//     *
-//     * @param sourceMethod method from which code is proposed to be extracted into separate method.
-//     * @param scope        scope of the current project.
-//     * @param slice        computation slice.
-//     */
-//    private static void openDefinition(@Nullable PsiMethod sourceMethod, AnalysisScope scope, ASTSlice slice) {
-//        new Task.Backgroundable(scope.getProject(), "Search Definition") {
-//            @Override
-//            public void run(@NotNull ProgressIndicator indicator) {
-//                indicator.setIndeterminate(true);
-//            }
-//
-//            @Override
-//            public void onSuccess() {
-//                if (sourceMethod != null) {
-//                    Set<SmartPsiElementPointer<PsiElement>> statements = slice.getSliceStatements();
-//                    PsiStatement psiStatement = (PsiStatement) statements.iterator().next().getElement();
-//                    if (psiStatement != null && psiStatement.isValid()) {
-//                        EditorHelper.openInEditor(psiStatement);
-//                        Editor editor = FileEditorManager.getInstance(sourceMethod.getProject()).getSelectedTextEditor();
-//                        if (editor != null) {
-//                            TextAttributes attributes = EditorColorsManager.getInstance().getGlobalScheme().getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES);
-//                            editor.getMarkupModel().removeAllHighlighters();
-//                            statements.stream()
-//                                    .filter(statement -> statement.getElement() != null)
-//                                    .forEach(statement ->
-//                                                     editor.getMarkupModel().addRangeHighlighter(statement.getElement().getTextRange().getStartOffset(),
-//                                                                                                 statement.getElement().getTextRange().getEndOffset(), HighlighterLayer.SELECTION,
-//                                                                                                 attributes, HighlighterTargetArea.EXACT_RANGE));
-//                        }
-//                    }
-//                }
-//            }
-//        }.queue();
-//    }
+    /**
+     * Opens definition of method and highlights statements, which should be extracted.
+     *
+     * @param sourceMethod method from which code is proposed to be extracted into separate method.
+     * @param scope        scope of the current project.
+     * @param slice        computation slice.
+     */
+    private static void openDefinition(@Nullable FirSimpleFunction sourceMethod, AnalysisScope scope, ASTSlice slice) {
+        new Task.Backgroundable(scope.getProject(), "Search Definition") {
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                indicator.setIndeterminate(true);
+            }
+
+            @Override
+            public void onSuccess() {
+                if (sourceMethod != null) {
+                    Set<FirStatement> statements = slice.getSliceStatements();
+                    FirStatement firStatement = statements.iterator().next();
+                    // TODO isValid check
+                    if (firStatement == null) {
+                        return;
+                    }
+                    PsiElement psiElement = FirUtilsKt.getPsiElement(firStatement);
+                    if (psiElement != null) {
+                        EditorHelper.openInEditor(psiElement);
+                        Editor editor = FileEditorManager.getInstance(scope.getProject()).getSelectedTextEditor();
+                        if (editor != null) {
+                            TextAttributes attributes = EditorColorsManager.getInstance().getGlobalScheme().getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES);
+                            editor.getMarkupModel().removeAllHighlighters();
+                            statements.stream()
+                                    .filter(Objects::nonNull)
+                                    .forEach(statement ->
+                                                     editor.getMarkupModel().addRangeHighlighter(statement.getSource().getStartOffset(),
+                                                                                                 statement.getSource().getEndOffset(), HighlighterLayer.SELECTION,
+                                                                                                 attributes, HighlighterTargetArea.EXACT_RANGE));
+                        }
+                    }
+                }
+            }
+       }.queue();
+    }
 }

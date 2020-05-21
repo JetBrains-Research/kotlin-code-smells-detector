@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.psi.KtClassOrObject;
 import org.jetbrains.kotlin.psi.KtElement;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.*;
 import org.jetbrains.research.kotlincodesmelldetector.core.longmethod.*;
+import org.jetbrains.research.kotlincodesmelldetector.utils.FirUtilsKt;
 
 import java.util.*;
 
@@ -77,6 +78,7 @@ public class KotlinCodeSmellFacade {
                 throw new IllegalStateException("Empty cfg reference");
             }
             ControlFlowGraph cfg = ((FirControlFlowGraphReferenceImpl) firSimpleFunction.getControlFlowGraphReference()).getControlFlowGraph();
+            FirUtilsKt.testTraverse(cfg);
             for (FirVariable<?> declaration : getVariableDeclarationsInFunction(firSimpleFunction, cfg)) {
                 //stringBuilder.append(declaration.getName().toString() + ' ');
                 PDGSliceUnionCollection sliceUnionCollection = new PDGSliceUnionCollection(firSimpleFunction, cfg, declaration);

@@ -1,15 +1,16 @@
 package org.jetbrains.research.kotlincodesmelldetector.utils
 
 import com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.fir.declarations.FirFile
-import org.jetbrains.kotlin.fir.declarations.FirRegularClass
-import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction
-import org.jetbrains.kotlin.fir.declarations.FirVariable
+import com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.fir.analysis.cfa.traverse
+
+import org.jetbrains.kotlin.fir.analysis.cfa.TraverseDirection
+import org.jetbrains.kotlin.fir.declarations.*
+import org.jetbrains.kotlin.fir.expressions.FirStatement
 import org.jetbrains.kotlin.fir.java.FirProjectSessionProvider
 import org.jetbrains.kotlin.fir.psi
 import org.jetbrains.kotlin.fir.resolve.dfa.FirControlFlowGraphReferenceImpl
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.*
-import org.jetbrains.kotlin.fir.resolve.transformers.FirTotalResolveTransformer
 import org.jetbrains.kotlin.idea.fir.FirModuleResolveStateImpl
 import org.jetbrains.kotlin.idea.fir.getOrBuildFir
 import org.jetbrains.kotlin.utils.DFS
@@ -26,9 +27,9 @@ fun extractFirSimpleFunctions(firFile: FirFile): List<FirSimpleFunction> {
 
 fun getCurrentFirFileOpenInEditor(project: Project): FirFile {
     val ktFile = getCurrentFileOpenInEditor(project)
-    val transformer = FirTotalResolveTransformer()
-    val firFile = ktFile?.getOrBuildFir(FirModuleResolveStateImpl(FirProjectSessionProvider(project)))!!
-    transformer.processFiles(listOf(firFile))
+    // val transformer = FirTotalResolveTransformer()
+    val firFile = ktFile?.getOrBuildFir(FirModuleResolveStateImpl(FirProjectSessionProvider(project)), FirResolvePhase.BODY_RESOLVE)!!
+    // transformer.processFiles(listOf(firFile))
     return firFile
 }
 
@@ -46,12 +47,12 @@ fun getVariableDeclarationsInFunction(firSimpleFunction: FirSimpleFunction, cfg:
 /**
  * Returns variables inside as well as function parameters
  */
-fun getVariableDeclarationsInFunction(firSimpleFunction: FirSimpleFunction): List<FirVariable<*>> {
-    if (firSimpleFunction.controlFlowGraphReference !is FirControlFlowGraphReferenceImpl) {
+fun FirSimpleFunction.getVariableDeclarationsInFunction() : List<FirVariable<*>> {
+    if (this.controlFlowGraphReference !is FirControlFlowGraphReferenceImpl) {
         return emptyList()
     }
-    val cfg = (firSimpleFunction.controlFlowGraphReference as FirControlFlowGraphReferenceImpl).controlFlowGraph
-    return getVariableDeclarationsInFunction(firSimpleFunction, cfg)
+    val cfg = (this.controlFlowGraphReference as FirControlFlowGraphReferenceImpl).controlFlowGraph
+    return getVariableDeclarationsInFunction(this, cfg)
 }
 
 // the method is copy-paste of a private method in ControlFlowGraphRenderer.kt
@@ -84,4 +85,25 @@ private fun ControlFlowGraph.forEachSubGraph(block: (ControlFlowGraph) -> Unit) 
 
 fun CFGNode<*>.isEnterOrExitNode(): Boolean {
     return (this is EnterNodeMarker) || (this is ExitNodeMarker)
+}
+
+// gets the corresponding psi element if any
+fun FirStatement.getPsiElement(): PsiElement? {
+    return this.source.psi
+}
+
+fun testTraverse(cfg: ControlFlowGraph) {
+    val set = HashSet<CFGNode<*>>()
+    val visitorVoid = object : ControlFlowGraphVisitorVoid() {
+        override fun visitNode(p0: CFGNode<*>) {
+            set.add(p0)
+            //println(p0.fir.source.toString())
+        }
+    }
+    cfg.traverse(TraverseDirection.Forward, visitorVoid)
+    if (cfg.nodes.toSet() != set) {
+        println("Not equal")
+    } else {
+        println("Equal")
+    }
 }
