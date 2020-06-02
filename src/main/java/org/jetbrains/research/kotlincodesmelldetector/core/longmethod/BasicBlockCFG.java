@@ -16,7 +16,7 @@ class BasicBlockCFG {
     BasicBlockCFG(ControlFlowGraph cfg) {
         this.basicBlocks = new ArrayList<>();
         this.forwardReachableBlocks = new LinkedHashMap<>();
-        List<CFGNode<?>> allNodes = FirUtilsKt.sortedNodes(cfg);
+        List<CFGNode<?>> allNodes = FirUtilsKt.getTraversedNodes(cfg);
         //Map<CFGBlockNode, List<CFGNode>> directlyNestedNodesInBlocks = cfg.getDirectlyNestedNodesInBlocks();
         // TODO handle try nodes
         //        for (CFGBlockNode blockNode : directlyNestedNodesInBlocks.keySet()) {

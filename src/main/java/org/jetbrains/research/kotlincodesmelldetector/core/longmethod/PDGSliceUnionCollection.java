@@ -1,6 +1,5 @@
 package org.jetbrains.research.kotlincodesmelldetector.core.longmethod;
 
-import com.intellij.openapi.project.Project;
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction;
 import org.jetbrains.kotlin.fir.declarations.FirVariable;
 import org.jetbrains.kotlin.fir.expressions.FirVariableAssignment;
@@ -16,17 +15,19 @@ public class PDGSliceUnionCollection {
     private final Map<BasicBlock, PDGSliceUnion> sliceUnionMap;
     private final BasicBlockCFG basicBlockCFG;
     private final FirSimpleFunction firSimpleFunction;
+    private final PDG pdg;
 
 
     public PDGSliceUnionCollection(FirSimpleFunction firSimpleFunction, ControlFlowGraph cfg, FirVariable<?> variable) {
         this.sliceUnionMap = new LinkedHashMap<>();
         this.basicBlockCFG = new BasicBlockCFG(cfg);
         this.firSimpleFunction = firSimpleFunction;
-        Set<CFGNode<?>> nodeCriteria = getAssignmentNodesOfVariableCriterion(cfg, variable);
+        this.pdg = new PDG(cfg, firSimpleFunction);
+        Set<PDGNode> nodeCriteria = getAssignmentNodesOfVariableCriterion(pdg, variable);
         Map<CFGNode<?>, Set<BasicBlock>> boundaryBlockMap = new LinkedHashMap<>();
-        for (CFGNode<?> nodeCriterion : nodeCriteria) {
-            Set<BasicBlock> boundaryBlocks = boundaryBlocks(cfg, nodeCriterion);
-            boundaryBlockMap.put(nodeCriterion, boundaryBlocks);
+        for (PDGNode nodeCriterion : nodeCriteria) {
+            Set<BasicBlock> boundaryBlocks = boundaryBlocks(cfg, nodeCriterion.getCfgNode());
+            boundaryBlockMap.put(nodeCriterion.getCfgNode(), boundaryBlocks);
         }
         List<Set<BasicBlock>> list = new ArrayList<>(boundaryBlockMap.values());
         if (!list.isEmpty()) {
@@ -35,7 +36,7 @@ public class PDGSliceUnionCollection {
                 basicBlockIntersection.retainAll(list.get(i));
             }
             for (BasicBlock basicBlock : basicBlockIntersection) {
-                PDGSliceUnion sliceUnion = new PDGSliceUnion(firSimpleFunction, cfg, basicBlock, nodeCriteria, variable);
+                PDGSliceUnion sliceUnion = new PDGSliceUnion(firSimpleFunction, cfg, basicBlock, nodeCriteria, variable, basicBlockCFG);
                 // TODO check sliceUnion.satisfiesRules()
                 sliceUnionMap.put(basicBlock, sliceUnion);
             }
@@ -91,9 +92,9 @@ public class PDGSliceUnionCollection {
         return dominatedBlocks;
     }
 
-    private Set<CFGNode<?>> getAssignmentNodesOfVariableCriterion(ControlFlowGraph cfg, FirVariable<?> variable) {
-        Set<CFGNode<?>> nodeCriteria = new LinkedHashSet<>();
-        for (CFGNode<?> node : cfg.getNodes()) {
+    private Set<PDGNode> getAssignmentNodesOfVariableCriterion(PDG pdg, FirVariable<?> variable) {
+        Set<PDGNode> nodeCriteria = new LinkedHashSet<>();
+        for (PDGNode node : pdg.getNodes()) {
             if (isNodeDefinesButNotDeclaresVariable(node, variable)) {
                 nodeCriteria.add(node);
             }
@@ -102,9 +103,9 @@ public class PDGSliceUnionCollection {
     }
 
     // TODO handle class fields
-    private boolean isNodeDefinesButNotDeclaresVariable(CFGNode<?> node, FirVariable<?> variable) {
-        if (node instanceof VariableAssignmentNode) {
-            FirVariableAssignment variableAssignment = ((VariableAssignmentNode) node).getFir();
+    private boolean isNodeDefinesButNotDeclaresVariable(PDGNode node, FirVariable<?> variable) {
+        if (node.getCfgNode() instanceof VariableAssignmentNode) {
+            FirVariableAssignment variableAssignment = ((VariableAssignmentNode) node.getCfgNode()).getFir();
             if (variableAssignment.getLValue() instanceof FirResolvedNamedReference) {
                 FirResolvedNamedReference lValue = (FirResolvedNamedReference) variableAssignment.getLValue();
                 return lValue.getName().equals(variable.getName());

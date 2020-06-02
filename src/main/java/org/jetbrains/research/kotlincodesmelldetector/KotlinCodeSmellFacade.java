@@ -78,9 +78,8 @@ public class KotlinCodeSmellFacade {
                 throw new IllegalStateException("Empty cfg reference");
             }
             ControlFlowGraph cfg = ((FirControlFlowGraphReferenceImpl) firSimpleFunction.getControlFlowGraphReference()).getControlFlowGraph();
-            FirUtilsKt.testTraverse(cfg);
-            for (FirVariable<?> declaration : getVariableDeclarationsInFunction(firSimpleFunction, cfg)) {
-                //stringBuilder.append(declaration.getName().toString() + ' ');
+            FirUtilsKt.getDfgEdges(cfg);
+            for (FirVariable<?> declaration : getVariableDeclarationsAndParameters(firSimpleFunction, cfg)) {
                 PDGSliceUnionCollection sliceUnionCollection = new PDGSliceUnionCollection(firSimpleFunction, cfg, declaration);
                 //                double sumOfExtractedStatementsInGroup = 0.0;
                 //                double sumOfDuplicatedStatementsInGroup = 0.0;
