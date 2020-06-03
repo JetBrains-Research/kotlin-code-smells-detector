@@ -19,9 +19,11 @@ import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtParameter
+import org.jetbrains.kotlin.psi.KtPrimaryConstructor
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.KtReferenceExpression
+import org.jetbrains.kotlin.psi.KtSecondaryConstructor
 import org.jetbrains.kotlin.psi.KtThisExpression
 import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
@@ -143,14 +145,16 @@ fun generateFullEntitySets(entities: List<KtElement>): Map<KtElement, Set<PsiEle
             override fun visitElement(psiElement: PsiElement) {
                 if (psiElement is KtCallExpression) {
                     val resolved = psiElement.resolveToElement
-                    resolved?.let { result[entity]?.add(it) }
 
-                    if (resolved is KtPropertyAccessor && resolved.property.isField) {
-                        result[resolved]?.add(entity)
+                    if (resolved !is KtClassOrObject && resolved !is KtPrimaryConstructor && resolved !is KtSecondaryConstructor) { //TODO review
+                        resolved?.let { result[entity]?.add(it) }
+
+                        if (resolved is KtPropertyAccessor && resolved.property.isField) {
+                            result[resolved]?.add(entity)
+                        }
                     }
                 } else if (psiElement is KtReferenceExpression) {
                     val resolved = psiElement.resolveToElement
-
                     if (resolved is KtElement && resolved.isField) {
                         result[entity]?.add(resolved)
                         result[resolved]?.add(entity)
@@ -220,7 +224,7 @@ fun usedThroughThisReference(ktExpression: KtExpression): Boolean {
             val parent = ktExpression.parent
 
             return if (parent is KtDotQualifiedExpression) {
-                parent.selectorExpression is KtThisExpression
+                parent.selectorExpression == ktExpression || parent.selectorExpression is KtThisExpression
             } else {
                 true
             }

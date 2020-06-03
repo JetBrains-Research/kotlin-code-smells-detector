@@ -1,7 +1,6 @@
 package org.jetbrains.research.kotlincodesmelldetector.core
 
-import org.jetbrains.kotlin.idea.references.mainReference
-import org.jetbrains.kotlin.psi.KtCallExpression
+import com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.research.kotlincodesmelldetector.utils.referencesInBody
@@ -18,37 +17,35 @@ class GodClassVisualizationData(
     override val distinctSourceDependencies: Int
 
     init {
-        var distinctTargetDependencies = 0
-        var distinctSourceDependencies = 0
+        val distinctTargetDependencies = mutableSetOf<PsiElement>()
+        val distinctSourceDependencies = mutableSetOf<PsiElement>()
 
         for (function in extractedMethods) {
             for (ktExpression: KtExpression in function.referencesInBody) {
                 if (usedThroughThisReference(ktExpression)) {
-                    if (isInvocationToExtractedFunction(ktExpression, extractedMethods) ||
-                        isAccessToExtractedProperty(ktExpression, extractedFields)
+                    val resolved = ktExpression.resolveToElement ?: continue
+
+                    if (isInvocationToExtractedFunction(resolved, extractedMethods) ||
+                        isAccessToExtractedProperty(resolved, extractedFields)
                     ) {
-                        distinctTargetDependencies += 1
+                        distinctTargetDependencies.add(resolved)
                     } else {
-                        distinctSourceDependencies += 1
+                        distinctSourceDependencies.add(resolved)
                     }
                 }
             }
         }
 
-        this.distinctTargetDependencies = distinctTargetDependencies
-        this.distinctSourceDependencies = distinctSourceDependencies
+        this.distinctTargetDependencies = distinctTargetDependencies.size
+        this.distinctSourceDependencies = distinctSourceDependencies.size
     }
 
     private fun isInvocationToExtractedFunction(
-        invocation: KtExpression,
+        resolved: PsiElement?,
         extractedFunctions: Set<KtDeclaration>
     ): Boolean {
-        if (invocation !is KtCallExpression) {
-            return false
-        }
-
         for (method in extractedFunctions) {
-            if (method == invocation.resolveToElement) {
+            if (method == resolved) {
                 return true
             }
         }
@@ -57,11 +54,11 @@ class GodClassVisualizationData(
     }
 
     private fun isAccessToExtractedProperty(
-        access: KtExpression,
+        resolved: PsiElement?,
         extractedProperties: Set<KtDeclaration>
     ): Boolean {
         for (field in extractedProperties) {
-            if (field == access.resolveToElement) {
+            if (field == resolved) {
                 return true
             }
         }

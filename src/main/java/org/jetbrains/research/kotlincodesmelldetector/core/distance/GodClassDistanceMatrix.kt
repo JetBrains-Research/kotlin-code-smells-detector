@@ -9,7 +9,6 @@ import org.jetbrains.research.kotlincodesmelldetector.utils.fields
 import org.jetbrains.research.kotlincodesmelldetector.utils.generateFullEntitySets
 import org.jetbrains.research.kotlincodesmelldetector.utils.math.Clustering
 import org.jetbrains.research.kotlincodesmelldetector.utils.methods
-import org.jetbrains.research.kotlincodesmelldetector.utils.toPointer
 
 private const val maximumNumberOfSourceClassMembersAccessedByExtractClassCandidate = 2
 
