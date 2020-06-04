@@ -3,7 +3,6 @@ package org.jetbrains.research.kotlincodesmelldetector.ide.ui;
 import com.intellij.analysis.AnalysisScope;
 import com.intellij.icons.AllIcons;
 import com.intellij.ide.util.EditorHelper;
-import com.intellij.ide.util.scopeChooser.ScopeChooserCombo;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.colors.EditorColors;
@@ -16,10 +15,6 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiElement;
-import com.intellij.refactoring.HelpID;
-import com.intellij.refactoring.extractMethod.ExtractMethodHandler;
-import com.intellij.refactoring.extractMethod.PrepareFailedException;
-import com.intellij.ui.DoubleClickListener;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.ScrollPaneFactory;
 import com.intellij.ui.components.JBScrollPane;
@@ -28,16 +23,18 @@ import com.intellij.ui.treeStructure.treetable.TreeTableTree;
 import com.intellij.util.SmartList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.kotlin.fir.FirElement;
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction;
 import org.jetbrains.kotlin.fir.expressions.FirStatement;
+import org.jetbrains.kotlin.fir.resolve.dfa.cfg.CFGNode;
+import org.jetbrains.kotlin.idea.refactoring.introduce.extractFunction.ExtractKotlinFunctionHandler;
+import org.jetbrains.kotlin.psi.KtFile;
+import org.jetbrains.kotlin.psi.KtProperty;
 import org.jetbrains.research.kotlincodesmelldetector.KotlinCodeSmellDetectorBundle;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ProjectInfo;
 import org.jetbrains.research.kotlincodesmelldetector.core.longmethod.ASTSlice;
 import org.jetbrains.research.kotlincodesmelldetector.core.longmethod.ASTSliceGroup;
 import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.extractMethod.ExtractMethodCandidateGroup;
-import org.jetbrains.research.kotlincodesmelldetector.ide.ui.ExtractMethodCandidatesTreeCellRenderer;
-import org.jetbrains.research.kotlincodesmelldetector.ide.ui.ExtractMethodTreeTableModel;
+import org.jetbrains.research.kotlincodesmelldetector.ide.ui.listeners.DoubleClickListener;
 import org.jetbrains.research.kotlincodesmelldetector.ide.ui.listeners.ElementSelectionListener;
 import org.jetbrains.research.kotlincodesmelldetector.ide.ui.listeners.EnterKeyListener;
 import org.jetbrains.research.kotlincodesmelldetector.utils.FirUtilsKt;
@@ -46,10 +43,14 @@ import javax.swing.*;
 import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.event.InputEvent;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.*;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.jetbrains.research.kotlincodesmelldetector.KotlinCodeSmellFacade.getExtractMethodRefactoringOpportunities;
 import static org.jetbrains.research.kotlincodesmelldetector.ide.ui.AbstractRefactoringPanel.expandOrCollapsePath;
 import static org.jetbrains.research.kotlincodesmelldetector.ide.ui.AbstractRefactoringPanel.runAfterCompilationCheck;
@@ -94,7 +95,7 @@ class ExtractMethodPanel extends JPanel {
         treeTable.setTreeCellRenderer(new ExtractMethodCandidatesTreeCellRenderer());
         treeTable.getColumnModel().getColumn(0).setPreferredWidth(800);
         treeTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-       // treeTable.addMouseListener((DoubleClickListener) this::openMethodDefinition);
+        treeTable.addMouseListener((DoubleClickListener) this::openMethodDefinition);
         treeTable.addKeyListener((EnterKeyListener) this::openMethodDefinition);
         treeTable.getTree().addTreeSelectionListener((ElementSelectionListener) this::enableRefactorButtonIfAnySelected);
         refreshLabel.setForeground(JBColor.GRAY);
@@ -215,7 +216,6 @@ class ExtractMethodPanel extends JPanel {
                             .collect(toList());
                     treeTableModel.setCandidateRefactoringGroups(extractMethodCandidateGroups);
                     ApplicationManager.getApplication().invokeLater(() -> showRefactoringsTable());
-                    //IntelliJDeodorantCounterCollector.getInstance().refactoringFound(project, "extract.method", extractMethodCandidateGroups.size());
                 });
             }
 
@@ -265,16 +265,29 @@ class ExtractMethodPanel extends JPanel {
      * Checks that the slice can be extracted into a separate method without compilation errors.
      */
     private boolean canBeExtracted(ASTSlice slice) {
-        // TODO implement
         return true;
-//        SmartList<PsiStatement> statementsToExtract = getStatementsToExtract(slice);
+//        SmartList<FirStatement> statementsToExtract = getStatementsToExtract(slice);
 //
+//        List<PsiElement> psiElements = new ArrayList<>();
+//        for (FirStatement firStatement : statementsToExtract) {
+//            if (firStatement.getSource() instanceof FirPsiSourceElement) {
+//                FirPsiSourceElement<?> firPsiSourceElement = (FirPsiSourceElement<?>) firStatement.getSource();
+//                psiElements.add(firPsiSourceElement.getPsi());
+//            }
+//        }
+//        if (!(slice.getLocalVariableCriterion() != null && slice.getLocalVariableCriterion().getSource() instanceof FirPsiSourceElement)) {
+//            return false;
+//        }
+//        // TODO if не каст к ktvariabledeclaration
+////        KtProperty ktProperty = (KtProperty) ((FirPsiSourceElement<?>) slice.getLocalVariableCriterion().getSource()).getPsi();
+////        ktProperty.getTypeReference().getTypeElement()
+//        ExtractKotlinFunctionHandler extractKotlinFunctionHandler = new ExtractKotlinFunctionHandler();
+//        extractKotlinFunctionHandler.
 //        MyExtractMethodProcessor processor = new MyExtractMethodProcessor(scope.getProject(),
-//                                                                          null, statementsToExtract.toArray(new PsiElement[0]), slice.getLocalVariableCriterion().getType(),
-//                                                                          IntelliJDeodorantBundle.message("extract.method.refactoring.name"), "", HelpID.EXTRACT_METHOD,
+//                                                                          null, psiElements, slice.getLocalVariableCriterion().get,
+//                                                                          KotlinCodeSmellDetectorBundle.message("extract.method.refactoring.name"), "", HelpID.EXTRACT_METHOD,
 //                                                                          slice.getSourceTypeDeclaration(), slice.getLocalVariableCriterion());
 //
-//        processor.setOutputVariable();
 //
 //        try {
 //            processor.setShowErrorDialogs(false);
@@ -286,26 +299,26 @@ class ExtractMethodPanel extends JPanel {
 //        return false;
     }
 
-//    /**
-//     * Collects statements that can be extracted into a separate method.
-//     */
-//    public SmartList<PsiStatement> getStatementsToExtract(ASTSlice slice) {
-//        Set<PDGNode> nodes = slice.getSliceNodes();
-//        SmartList<PsiStatement> statementsToExtract = new SmartList<>();
-//
-//        for (PDGNode pdgNode : nodes) {
-//            boolean isNotChild = true;
-//            for (PDGNode node : nodes) {
-//                if (isChild(node.getASTStatement(), pdgNode.getASTStatement())) {
-//                    isNotChild = false;
-//                }
-//            }
-//            if (isNotChild) {
-//                statementsToExtract.add(pdgNode.getASTStatement());
-//            }
-//        }
-//        return statementsToExtract;
-//    }
+    /**
+     * Collects statements that can be extracted into a separate method.
+     */
+    public SmartList<FirStatement> getStatementsToExtract(ASTSlice slice) {
+        List<CFGNode<?>> nodes = slice.getSliceNodes();
+        SmartList<FirStatement> statementsToExtract = new SmartList<>();
+
+        for (CFGNode<?> cfgNode : nodes) {
+            boolean isNotChild = true;
+            for (CFGNode<?> node : nodes) {
+                if (FirUtilsKt.isChild(node, cfgNode)) {
+                    isNotChild = false;
+                }
+            }
+            if (isNotChild && cfgNode.getFir() instanceof FirStatement) {
+                statementsToExtract.add((FirStatement) cfgNode.getFir());
+            }
+        }
+        return statementsToExtract;
+    }
 
     /**
      * Extracts statements into new method.
@@ -314,31 +327,25 @@ class ExtractMethodPanel extends JPanel {
      * @return callback to run when "Refactor" button is selected.
      */
     private Runnable doExtract(ASTSlice slice) {
-        // TODO implement
         return () -> {
-//            Editor editor = FileEditorManager.getInstance(slice.getSourceMethodDeclaration().getProject()).getSelectedTextEditor();
-//            SmartList<PsiStatement> statementsToExtract = getStatementsToExtract(slice);
-//
-//            MyExtractMethodProcessor processor = new MyExtractMethodProcessor(slice.getSourceMethodDeclaration().getProject(),
-//                                                                              editor, statementsToExtract.toArray(new PsiElement[0]), slice.getLocalVariableCriterion().getType(),
-//                                                                              "", "", HelpID.EXTRACT_METHOD,
-//                                                                              slice.getSourceTypeDeclaration(), slice.getLocalVariableCriterion());
-//
-//            processor.setOutputVariable();
-//
-//            try {
-//                processor.setShowErrorDialogs(true);
-//                if (processor.prepare()) {
-//                    ExtractMethodHandler.invokeOnElements(slice.getSourceMethodDeclaration().getProject(), processor,
-//                                                          slice.getSourceMethodDeclaration().getContainingFile(), true);
-//                    if (editor != null && processor.getExtractedMethod() != null) {
-//                        IntelliJDeodorantCounterCollector.getInstance().extractMethodRefactoringApplied(editor.getProject(),
-//                                                                                                        slice, processor.getExtractedMethod());
-//                    }
-//                }
-//            } catch (PrepareFailedException e) {
-//                e.printStackTrace();
-//            }
+            Project project = slice.getProject();
+            Editor editor = FileEditorManager.getInstance(project).getSelectedTextEditor();
+            SmartList<FirStatement> statementsToExtract = getStatementsToExtract(slice);
+
+            List<PsiElement> psiElements = new ArrayList<>();
+            for (FirStatement firStatement : statementsToExtract) {
+                PsiElement psiElement = FirUtilsKt.getPsiElement(firStatement);
+                if (psiElement != null) {
+                    psiElements.add(psiElement);
+                }
+            }
+            ExtractKotlinFunctionHandler extractKotlinFunctionHandler = new ExtractKotlinFunctionHandler();
+
+            PsiElement psiFunction = FirUtilsKt.getPsiElement(slice.getSourceMethodDeclaration());
+
+            // TODO error handling
+            extractKotlinFunctionHandler.doInvoke(editor, (KtFile) psiFunction.getContainingFile(), psiElements, psiFunction);
+
         };
     }
 

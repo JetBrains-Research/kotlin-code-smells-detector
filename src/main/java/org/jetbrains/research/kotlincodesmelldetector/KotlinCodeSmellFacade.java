@@ -1,6 +1,7 @@
 package org.jetbrains.research.kotlincodesmelldetector;
 
 import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.project.Project;
 import com.intellij.psi.SmartPsiElementPointer;
 import org.jetbrains.kotlin.fir.declarations.FirFile;
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction;
@@ -66,12 +67,12 @@ public class KotlinCodeSmellFacade {
         FirFile firFile = getCurrentFirFileOpenInEditor(project.getProject());
         List<FirSimpleFunction> firSimpleFunctions = extractFirSimpleFunctions(firFile);
         for (FirSimpleFunction firSimpleFunction : firSimpleFunctions) {
-            processMethod(extractedSliceGroups, firSimpleFunction);
+            processMethod(extractedSliceGroups, firSimpleFunction, project.getProject());
         }
         return extractedSliceGroups;
     }
 
-    private static void processMethod(final Set<ASTSliceGroup> extractedSliceGroups, FirSimpleFunction firSimpleFunction) {
+    private static void processMethod(final Set<ASTSliceGroup> extractedSliceGroups, FirSimpleFunction firSimpleFunction, Project project) {
         if (firSimpleFunction.getBody() != null) {
             if (firSimpleFunction.getControlFlowGraphReference() instanceof FirEmptyControlFlowGraphReference) {
                 // TODO error handling
@@ -88,7 +89,7 @@ public class KotlinCodeSmellFacade {
                 //                int groupSize = sliceUnionCollection.getSliceUnions().size();
                 ASTSliceGroup sliceGroup = new ASTSliceGroup();
                 for (PDGSliceUnion sliceUnion : sliceUnionCollection.getSliceUnions()) {
-                    ASTSlice slice = new ASTSlice(sliceUnion);
+                    ASTSlice slice = new ASTSlice(sliceUnion, project);
                     //   if (true) { //!slice.isVariableCriterionDeclarationStatementIsDeeperNestedThanExtractedMethodInvocationInsertionStatement()) {
                     //                        int numberOfExtractedStatements = slice.getNumberOfSliceStatements();
                     //                        int numberOfDuplicatedStatements = slice.getNumberOfDuplicatedStatements();

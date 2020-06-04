@@ -2,6 +2,7 @@ package org.jetbrains.research.kotlincodesmelldetector.utils
 
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.analysis.cfa.TraverseDirection
 import org.jetbrains.kotlin.fir.analysis.cfa.traverse
 import org.jetbrains.kotlin.fir.declarations.*
@@ -80,6 +81,18 @@ fun CFGNode<*>.isEnterOrExitNode(): Boolean {
 
 fun CFGNode<*>.isExitNode(): Boolean {
     return this is ExitNodeMarker
+}
+
+fun isChild(parent: FirElement, child: FirElement): Boolean {
+    if (child.source == null || parent.source == null) {
+        return false
+    }
+    return if (parent == child) false else child.source!!.startOffset >= parent.source!!.startOffset
+            && child.source!!.endOffset <= parent.source!!.endOffset
+}
+
+fun isChild(parent: CFGNode<*>, child: CFGNode<*>): Boolean {
+    return isChild(parent.fir, child.fir)
 }
 
 // gets the corresponding psi element if any

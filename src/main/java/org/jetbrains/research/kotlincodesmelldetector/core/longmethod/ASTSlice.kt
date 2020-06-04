@@ -1,12 +1,13 @@
 package org.jetbrains.research.kotlincodesmelldetector.core.longmethod
 
+import com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction
 import org.jetbrains.kotlin.fir.declarations.FirVariable
 import org.jetbrains.kotlin.fir.expressions.FirStatement
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.CFGNode
 import org.jetbrains.research.kotlincodesmelldetector.utils.getVariableDeclarationsAndParameters
 
-class ASTSlice(sliceUnion: PDGSliceUnion) {
+class ASTSlice(sliceUnion: PDGSliceUnion, val project : Project) {
     val sourceMethodDeclaration: FirSimpleFunction = sliceUnion.function
     val sliceNodes: List<CFGNode<*>> = sliceUnion.sliceNodes
     val sliceStatements: MutableSet<FirStatement> = LinkedHashSet()
