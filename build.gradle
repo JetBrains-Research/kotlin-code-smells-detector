@@ -1,27 +1,35 @@
 buildscript {
-    ext.kotlin_version = '1.3.72'
+    ext.kotlin_version = "${gradle.ext.kotlin_version}"
     repositories {
+        maven { url "https://teamcity.jetbrains.com/guestAuth/app/rest/builds/buildType:(id:Kotlin_KotlinPublic_Compiler),number:${gradle.ext.kotlin_version},branch:(default:any)/artifacts/content/maven" }
         mavenCentral()
     }
 
     dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${gradle.ext.kotlin_version}"
     }
 }
 
 plugins {
     id 'java'
+    id 'org.jetbrains.kotlin.jvm' version "$kotlin_version"
     id 'org.jetbrains.intellij' version '0.4.18'
-    id "org.jetbrains.kotlin.jvm" version "$kotlin_version"
+}
+
+dependencies {
+    // No idea why tests do not work without it
+    testCompile group: 'org.jetbrains.kotlinx', name: 'kotlinx-collections-immutable-jvm', version: '0.3.1'
 }
 
 repositories {
+    maven { url "https://teamcity.jetbrains.com/guestAuth/app/rest/builds/buildType:(id:Kotlin_KotlinPublic_Compiler),number:${gradle.ext.kotlin_version},branch:(default:any)/artifacts/content/maven" }
     mavenCentral()
     jcenter()
 }
 
 allprojects {
     apply plugin: 'idea'
+    apply plugin: 'kotlin'
     idea {
         module {
             downloadSources = true
@@ -34,18 +42,16 @@ sourceCompatibility = 1.8
 
 apply plugin: 'java'
 apply plugin: 'kotlin'
-apply plugin: 'org.jetbrains.intellij'
 
 intellij {
     version '2020.1.1'
+    version '2020.1'
     plugins = ['Kotlin', 'java']
     pluginName 'KotlinCodeSmellDetector'
     downloadSources true
     intellij.updateSinceUntilBuild false
 }
-dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-}
+
 compileKotlin {
     kotlinOptions {
         jvmTarget = "1.8"

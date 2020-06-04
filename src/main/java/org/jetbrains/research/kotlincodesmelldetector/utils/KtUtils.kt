@@ -56,10 +56,10 @@ val KtElement.declaredElements: List<KtDeclaration>
 val KtElement?.methods: List<KtDeclaration>
     get() {
         val result = this?.declaredElements
-            ?.filter { ktDeclaration -> ktDeclaration.isMethod }
-            ?.filter { ktDeclaration -> ktDeclaration.correctMethod }
-            ?.toMutableList()
-            ?: mutableListOf()
+                ?.filter { ktDeclaration -> ktDeclaration.isMethod }
+                ?.filter { ktDeclaration -> ktDeclaration.correctMethod }
+                ?.toMutableList()
+                ?: mutableListOf()
 
         if (this is KtClassOrObject) {
             this.companionObjects.forEach { companionObject -> result.addAll(companionObject.methods) }
@@ -74,8 +74,8 @@ val KtElement?.methods: List<KtDeclaration>
 val KtElement?.fields: List<KtDeclaration>
     get() {
         return this?.declaredElements
-            ?.filter { ktDeclaration -> ktDeclaration.isField }
-            ?: listOf()
+                ?.filter { ktDeclaration -> ktDeclaration.isField }
+                ?: listOf()
     }
 
 /**
@@ -211,8 +211,8 @@ fun usedThroughThisReference(ktExpression: KtExpression): Boolean {
         }
 
         resolvedElement is KtFunction && resolvedElement.isLocal
-            || resolvedElement is KtProperty && resolvedElement.isLocal
-            || resolvedElement is KtParameter && !resolvedElement.hasValOrVar() -> {
+                || resolvedElement is KtProperty && resolvedElement.isLocal
+                || resolvedElement is KtParameter && !resolvedElement.hasValOrVar() -> {
             false
         }
 
@@ -292,19 +292,19 @@ val KtNamedDeclaration.signature: String?
         val fqName = this.fqName?.asString() ?: return null
         if (this is KtNamedFunction) {
             val parameters = this.valueParameters
-                .map { it.type()?.toString() }
-                .joinToString(", ", "(", ")")
+                    .map { it.type()?.toString() }
+                    .joinToString(", ", "(", ")")
             return fqName + parameters
         }
         return fqName
     }
 
 val acceptableOriginClassNames = setOf(
-    "kotlin.collections.Collection", "kotlin.collections.MutableCollection",
-    "kotlin.collections.AbstractCollection", "kotlin.collections.List", "kotlin.collections.MutableList",
-    "kotlin.collections.AbstractList", "kotlin.collections.ArrayList", "java.util.LinkedList",
-    "kotlin.collections.Set", "kotlin.collections.MutableSet", "java.util.AbstractSet", "java.util.HashSet",
-    "java.util.LinkedHashSet", "java.util.SortedSet", "java.util.TreeSet", "java.util.Vector", "java.util.Stack"
+        "kotlin.collections.Collection", "kotlin.collections.MutableCollection",
+        "kotlin.collections.AbstractCollection", "kotlin.collections.List", "kotlin.collections.MutableList",
+        "kotlin.collections.AbstractList", "kotlin.collections.ArrayList", "java.util.LinkedList",
+        "kotlin.collections.Set", "kotlin.collections.MutableSet", "java.util.AbstractSet", "java.util.HashSet",
+        "java.util.LinkedHashSet", "java.util.SortedSet", "java.util.TreeSet", "java.util.Vector", "java.util.Stack"
 )
 
 fun isContainer(type: FqName): Boolean {

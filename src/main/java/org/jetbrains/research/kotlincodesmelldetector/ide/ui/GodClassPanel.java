@@ -1,6 +1,5 @@
 package org.jetbrains.research.kotlincodesmelldetector.ide.ui;
 
-import com.intellij.analysis.AnalysisScope;
 import com.intellij.openapi.application.TransactionGuard;
 import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
@@ -23,10 +22,10 @@ public class GodClassPanel extends AbstractRefactoringPanel {
 
     public GodClassPanel(@NotNull Project project) {
         super(project,
-                "god.class.identification.indicator",
-                new ExtractClassRefactoringType(),
-                new GodClassTreeTableModel(Collections.emptyList(), COLUMN_NAMES),
-                REFACTOR_DEPTH);
+              "god.class.identification.indicator",
+              new ExtractClassRefactoringType(),
+              new GodClassTreeTableModel(Collections.emptyList(), COLUMN_NAMES),
+              REFACTOR_DEPTH);
     }
 
     @Override

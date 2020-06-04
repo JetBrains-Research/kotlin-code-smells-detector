@@ -1,17 +1,24 @@
 package org.jetbrains.research.kotlincodesmelldetector;
 
 import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.project.Project;
 import com.intellij.psi.SmartPsiElementPointer;
+import org.jetbrains.kotlin.fir.declarations.FirFile;
+import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction;
+import org.jetbrains.kotlin.fir.declarations.FirVariable;
+import org.jetbrains.kotlin.fir.references.impl.FirEmptyControlFlowGraphReference;
+import org.jetbrains.kotlin.fir.resolve.dfa.FirControlFlowGraphReferenceImpl;
+import org.jetbrains.kotlin.fir.resolve.dfa.cfg.ControlFlowGraph;
 import org.jetbrains.kotlin.psi.KtClass;
 import org.jetbrains.kotlin.psi.KtClassOrObject;
 import org.jetbrains.kotlin.psi.KtElement;
-import org.jetbrains.kotlin.psi.KtFile;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.*;
+import org.jetbrains.research.kotlincodesmelldetector.core.longmethod.*;
+import org.jetbrains.research.kotlincodesmelldetector.utils.FirUtilsKt;
 
 import java.util.*;
 
-import static org.jetbrains.research.kotlincodesmelldetector.utils.ExtractUtilsKt.extractClasses;
-import static org.jetbrains.research.kotlincodesmelldetector.utils.ExtractUtilsKt.getCurrentFileOpenInEditor;
+import static org.jetbrains.research.kotlincodesmelldetector.utils.FirUtilsKt.*;
 
 public class KotlinCodeSmellFacade {
     public static TreeSet<ExtractClassCandidateGroup> getExtractClassRefactoringOpportunities(ProjectInfo project, ProgressIndicator indicator) {
@@ -53,5 +60,85 @@ public class KotlinCodeSmellFacade {
                 distanceMatrix.getMoveMethodCandidateRefactoringsByAccess(classesToBeExamined, indicator);
         Collections.sort(moveMethodCandidateRefactorings);
         return moveMethodCandidateRefactorings;
+    }
+
+    public static Set<ASTSliceGroup> getExtractMethodRefactoringOpportunities(ProjectInfo project, ProgressIndicator indicator) {
+        Set<ASTSliceGroup> extractedSliceGroups = new HashSet<>();
+        FirFile firFile = getCurrentFirFileOpenInEditor(project.getProject());
+        List<FirSimpleFunction> firSimpleFunctions = extractFirSimpleFunctions(firFile);
+        for (FirSimpleFunction firSimpleFunction : firSimpleFunctions) {
+            processMethod(extractedSliceGroups, firSimpleFunction, project.getProject());
+        }
+        return extractedSliceGroups;
+    }
+
+    private static void processMethod(final Set<ASTSliceGroup> extractedSliceGroups, FirSimpleFunction firSimpleFunction, Project project) {
+        if (firSimpleFunction.getBody() != null) {
+            if (firSimpleFunction.getControlFlowGraphReference() instanceof FirEmptyControlFlowGraphReference) {
+                // TODO error handling
+                throw new IllegalStateException("Empty cfg reference");
+            }
+            ControlFlowGraph cfg = ((FirControlFlowGraphReferenceImpl) firSimpleFunction.getControlFlowGraphReference()).getControlFlowGraph();
+            for (FirVariable<?> declaration : getVariableDeclarationsAndParameters(firSimpleFunction)) {
+                PDGSliceUnionCollection sliceUnionCollection = new PDGSliceUnionCollection(firSimpleFunction, cfg, declaration);
+                //                double sumOfExtractedStatementsInGroup = 0.0;
+                //                double sumOfDuplicatedStatementsInGroup = 0.0;
+                //                double sumOfDuplicationRatioInGroup = 0.0;
+                //                int maximumNumberOfExtractedStatementsInGroup = 0;
+                //                int groupSize = sliceUnionCollection.getSliceUnions().size();
+                ASTSliceGroup sliceGroup = new ASTSliceGroup();
+                for (PDGSliceUnion sliceUnion : sliceUnionCollection.getSliceUnions()) {
+                    ASTSlice slice = new ASTSlice(sliceUnion, project);
+                    //   if (true) { //!slice.isVariableCriterionDeclarationStatementIsDeeperNestedThanExtractedMethodInvocationInsertionStatement()) {
+                    //                        int numberOfExtractedStatements = slice.getNumberOfSliceStatements();
+                    //                        int numberOfDuplicatedStatements = slice.getNumberOfDuplicatedStatements();
+                    //                        double duplicationRatio = (double) numberOfDuplicatedStatements / (double) numberOfExtractedStatements;
+                    //                        sumOfExtractedStatementsInGroup += numberOfExtractedStatements;
+                    //                        sumOfDuplicatedStatementsInGroup += numberOfDuplicatedStatements;
+                    //                        sumOfDuplicationRatioInGroup += duplicationRatio;
+                    //                        if (numberOfExtractedStatements > maximumNumberOfExtractedStatementsInGroup)
+                    //                            maximumNumberOfExtractedStatementsInGroup = numberOfExtractedStatements;
+                    sliceGroup.addCandidate(slice);
+                }
+
+                if (!sliceGroup.getCandidates().isEmpty()) {
+                    //                    sliceGroup.setAverageNumberOfExtractedStatementsInGroup(sumOfExtractedStatementsInGroup / (double) groupSize);
+                    //                    sliceGroup.setAverageNumberOfDuplicatedStatementsInGroup(sumOfDuplicatedStatementsInGroup / (double) groupSize);
+                    //                    sliceGroup.setAverageDuplicationRatioInGroup(sumOfDuplicationRatioInGroup / (double) groupSize);
+                    //                    sliceGroup.setMaximumNumberOfExtractedStatementsInGroup(maximumNumberOfExtractedStatementsInGroup);
+                    extractedSliceGroups.add(sliceGroup);
+                }
+            }
+            //            for (PsiVariable declaration : pdg.getVariableDeclarationsAndAccessedFieldsInMethod()) {
+            //                PlainVariable variable = new PlainVariable(declaration);
+            //                PDGObjectSliceUnionCollection objectSliceUnionCollection = new PDGObjectSliceUnionCollection(pdg, variable);
+            //                double sumOfExtractedStatementsInGroup = 0.0;
+            //                double sumOfDuplicatedStatementsInGroup = 0.0;
+            //                double sumOfDuplicationRatioInGroup = 0.0;
+            //                int maximumNumberOfExtractedStatementsInGroup = 0;
+            //                int groupSize = objectSliceUnionCollection.getSliceUnions().size();
+            //                ASTSliceGroup sliceGroup = new ASTSliceGroup();
+            //                for (PDGObjectSliceUnion objectSliceUnion : objectSliceUnionCollection.getSliceUnions()) {
+            //                    ASTSlice slice = new ASTSlice(objectSliceUnion);
+            //                    if (!slice.isVariableCriterionDeclarationStatementIsDeeperNestedThanExtractedMethodInvocationInsertionStatement()) {
+            //                        int numberOfExtractedStatements = slice.getNumberOfSliceStatements();
+            //                        int numberOfDuplicatedStatements = slice.getNumberOfDuplicatedStatements();
+            //                        double duplicationRatio = (double) numberOfDuplicatedStatements / (double) numberOfExtractedStatements;
+            //                        sumOfExtractedStatementsInGroup += numberOfExtractedStatements;
+            //                        sumOfDuplicatedStatementsInGroup += numberOfDuplicatedStatements;
+            //                        sumOfDuplicationRatioInGroup += duplicationRatio;
+            //                        if (numberOfExtractedStatements > maximumNumberOfExtractedStatementsInGroup)
+            //                            maximumNumberOfExtractedStatementsInGroup = numberOfExtractedStatements;
+            //                        sliceGroup.addCandidate(slice);
+            //                    }
+            //                }
+            //                if (!sliceGroup.getCandidates().isEmpty()) {
+            //                    sliceGroup.setAverageNumberOfExtractedStatementsInGroup(sumOfExtractedStatementsInGroup / (double) groupSize);
+            //                    sliceGroup.setAverageNumberOfDuplicatedStatementsInGroup(sumOfDuplicatedStatementsInGroup / (double) groupSize);
+            //                    sliceGroup.setAverageDuplicationRatioInGroup(sumOfDuplicationRatioInGroup / (double) groupSize);
+            //                    sliceGroup.setMaximumNumberOfExtractedStatementsInGroup(maximumNumberOfExtractedStatementsInGroup);
+            //                    extractedSliceGroups.add(sliceGroup);
+            //                }
+        }
     }
 }

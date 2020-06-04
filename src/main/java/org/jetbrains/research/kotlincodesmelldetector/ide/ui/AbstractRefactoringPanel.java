@@ -17,6 +17,7 @@ import com.intellij.openapi.editor.markup.HighlighterLayer;
 import com.intellij.openapi.editor.markup.HighlighterTargetArea;
 import com.intellij.openapi.editor.markup.TextAttributes;
 import com.intellij.openapi.fileEditor.FileEditorManager;
+import com.intellij.openapi.progress.PerformInBackgroundOption;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
@@ -44,6 +45,7 @@ import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.Refactorin
 import org.jetbrains.research.kotlincodesmelldetector.ide.ui.listeners.DoubleClickListener;
 import org.jetbrains.research.kotlincodesmelldetector.ide.ui.listeners.ElementSelectionListener;
 import org.jetbrains.research.kotlincodesmelldetector.ide.ui.listeners.EnterKeyListener;
+import org.jetbrains.research.kotlincodesmelldetector.utils.KtUtilsKt;
 
 import javax.swing.*;
 import javax.swing.tree.TreePath;
@@ -63,7 +65,6 @@ public abstract class AbstractRefactoringPanel extends JPanel {
     private final ActionButton refreshButton;
     private final ActionButton exportButton;
     private final ScopeChooserComboBox scopeChooserComboBox;
-
     private JScrollPane scrollPane = new JBScrollPane();
     private final JLabel refreshLabel = new JLabel(
             KotlinCodeSmellDetectorBundle.message("press.refresh.to.find.refactoring.opportunities"),
@@ -101,7 +102,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
 
     public static void runAfterCompilationCheck(Task.Backgroundable afterCompilationBackgroundable,
                                                 Project project, ProjectInfo projectInfo) {
-        final Task.Backgroundable compilationBackgroundable = new Task.Backgroundable(project, KotlinCodeSmellDetectorBundle.message("project.compiling.indicator.text"), true) {
+        final Task.Backgroundable compilationBackgroundable = new Task.Backgroundable(project, KotlinCodeSmellDetectorBundle.message("project.compiling.indicator.text"), true, PerformInBackgroundOption.ALWAYS_BACKGROUND) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 runAfterCompilationCheck(projectInfo, afterCompilationBackgroundable);
@@ -324,7 +325,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
                                           AnalysisScope scope,
                                           PsiElement statement,
                                           boolean openInEditor) {
-        new Task.Backgroundable(scope.getProject(), "Search Definition") {
+        ProgressManager.getInstance().run(new Task.Backgroundable(scope.getProject(), "Search Definition", true, PerformInBackgroundOption.ALWAYS_BACKGROUND) {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 indicator.setIndeterminate(true);
@@ -337,7 +338,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
                 }
                 highlightPsiElement(statement, openInEditor);
             }
-        }.queue();
+        });
     }
 
     public static void highlightMethod(@Nullable KtDeclaration sourceMethod,
@@ -360,7 +361,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
 
                 highlightPsiElement(field, openInEditor);
             }
-        }.queue();
+        };
     }
 
     private static void highlightPsiElement(PsiElement psiElement, boolean openInEditor) {
