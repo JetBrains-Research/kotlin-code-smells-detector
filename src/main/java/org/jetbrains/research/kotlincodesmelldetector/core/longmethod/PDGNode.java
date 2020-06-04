@@ -3,15 +3,15 @@ package org.jetbrains.research.kotlincodesmelldetector.core.longmethod;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.kotlin.fir.FirElement;
-import org.jetbrains.kotlin.fir.declarations.FirDeclaration;
 import org.jetbrains.kotlin.fir.declarations.FirProperty;
 import org.jetbrains.kotlin.fir.declarations.FirVariable;
 import org.jetbrains.kotlin.fir.expressions.FirVariableAssignment;
 import org.jetbrains.kotlin.fir.references.FirNamedReference;
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.CFGNode;
-import org.jetbrains.kotlin.fir.resolve.dfa.cfg.VariableAssignmentNode;
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.VariableDeclarationNode;
 import org.jetbrains.kotlin.fir.visitors.FirVisitor;
+import org.jetbrains.kotlin.fir.visitors.FirVisitorVoid;
+import org.jetbrains.research.kotlincodesmelldetector.utils.FirUtilsKt;
 
 import java.util.*;
 
@@ -58,7 +58,7 @@ public class PDGNode {
     }
 
     public List<FirProperty> definedVariables() {
-        // add firvariableassignment?
+        // todo add firVariableAssignment
         if (this.getCfgNode() instanceof VariableDeclarationNode) {
             VariableDeclarationNode declarationNode = (VariableDeclarationNode) this.getCfgNode();
             return Collections.singletonList(declarationNode.getFir());
@@ -66,77 +66,17 @@ public class PDGNode {
         return Collections.emptyList();
     }
 
-    // todo add assignment
     public boolean definesLocalVariable(FirVariable<?> variableInstruction) {
-        List<FirVariable<?>> data = new ArrayList<>();
-        this.cfgNode.getFir().accept(new FirVisitor<Void, List<FirVariable<?>>>() {
-            @Override
-            public Void visitVariableAssignment(@NotNull FirVariableAssignment variableAssignment, List<FirVariable<?>> data) {
-                if (variableAssignment.getLValue() instanceof FirNamedReference) {
-                    FirNamedReference lValue = (FirNamedReference) variableAssignment.getLValue();
-                    if (lValue.getName().equals(variableInstruction.getName())) {
-                        data.add(variableInstruction);
-                    }
-                }
-                return null;
-            }
-
-            @Override
-            public Void visitProperty(@NotNull FirProperty property, List<FirVariable<?>> data) {
-                if (property.equals(variableInstruction)) {
-                    data.add(property);
-                }
-                return null;
-            }
-
-            @Override
-            public Void visitElement(@NotNull FirElement firElement, List<FirVariable<?>> firVariables) {
-                return null;
-            }
-        }, data);
-        return !data.isEmpty();
+        return FirUtilsKt.definesLocalVariable(cfgNode.getFir(), variableInstruction);
     }
 
     public boolean declaresLocalVariable(FirVariable<?> variableInstruction) {
-        List<FirVariable<?>> data = new ArrayList<>();
-        this.cfgNode.getFir().accept(new FirVisitor<Void, List<FirVariable<?>>>() {
-            @Override
-            public Void visitProperty(@NotNull FirProperty property, List<FirVariable<?>> data) {
-                if (property.equals(variableInstruction)) {
-                    data.add(property);
-                }
-                return null;
-            }
+        return FirUtilsKt.declaresLocalVariable(cfgNode.getFir(), variableInstruction);
 
-            @Override
-            public Void visitElement(@NotNull FirElement firElement, List<FirVariable<?>> firVariables) {
-                return null;
-            }
-        }, data);
-        return !data.isEmpty();
     }
 
     public boolean usesLocalVariable(FirVariable<?> variableInstruction) {
-        List<FirVariable<?>> data = new ArrayList<>();
-        this.cfgNode.getFir().accept(new FirVisitor<Void, List<FirVariable<?>>>() {
-            @Override
-            public Void visitElement(@NotNull FirElement firElement, List<FirVariable<?>> firVariables) {
-                System.out.println(firElement);
-                return null;
-            }
-
-            @Override
-            public Void visitProperty(@NotNull FirProperty property, List<FirVariable<?>> data) {
-                if (property.equals(variableInstruction)) {
-                    data.add(property);
-                }
-                System.out.println("AAAA");
-                return null;
-            }
-
-
-        }, data);
-        return !data.isEmpty();
+        return FirUtilsKt.usesLocalVariable(cfgNode.getFir(), variableInstruction);
     }
 
     public static class GraphEdge {

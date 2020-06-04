@@ -13,7 +13,6 @@ public class PDG {
     private final ControlFlowGraph cfg;
     private final FirSimpleFunction function;
     private final PDGNode entryNode;
-    // TODO what should be here
     private final Map<FirWhenBranch, Set<CFGNode<?>>> nestingMap;
     private final List<FirVariable<?>> variableDeclarationsInMethod;
     private final Map<CFGNode<?>, Set<BasicBlock>> dominatedBlockMap;

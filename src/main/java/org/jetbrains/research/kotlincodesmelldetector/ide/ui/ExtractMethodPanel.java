@@ -266,37 +266,6 @@ class ExtractMethodPanel extends JPanel {
      */
     private boolean canBeExtracted(ASTSlice slice) {
         return true;
-//        SmartList<FirStatement> statementsToExtract = getStatementsToExtract(slice);
-//
-//        List<PsiElement> psiElements = new ArrayList<>();
-//        for (FirStatement firStatement : statementsToExtract) {
-//            if (firStatement.getSource() instanceof FirPsiSourceElement) {
-//                FirPsiSourceElement<?> firPsiSourceElement = (FirPsiSourceElement<?>) firStatement.getSource();
-//                psiElements.add(firPsiSourceElement.getPsi());
-//            }
-//        }
-//        if (!(slice.getLocalVariableCriterion() != null && slice.getLocalVariableCriterion().getSource() instanceof FirPsiSourceElement)) {
-//            return false;
-//        }
-//        // TODO if не каст к ktvariabledeclaration
-////        KtProperty ktProperty = (KtProperty) ((FirPsiSourceElement<?>) slice.getLocalVariableCriterion().getSource()).getPsi();
-////        ktProperty.getTypeReference().getTypeElement()
-//        ExtractKotlinFunctionHandler extractKotlinFunctionHandler = new ExtractKotlinFunctionHandler();
-//        extractKotlinFunctionHandler.
-//        MyExtractMethodProcessor processor = new MyExtractMethodProcessor(scope.getProject(),
-//                                                                          null, psiElements, slice.getLocalVariableCriterion().get,
-//                                                                          KotlinCodeSmellDetectorBundle.message("extract.method.refactoring.name"), "", HelpID.EXTRACT_METHOD,
-//                                                                          slice.getSourceTypeDeclaration(), slice.getLocalVariableCriterion());
-//
-//
-//        try {
-//            processor.setShowErrorDialogs(false);
-//            return processor.prepare();
-//
-//        } catch (PrepareFailedException e) {
-//            e.printStackTrace();
-//        }
-//        return false;
     }
 
     /**
@@ -366,7 +335,7 @@ class ExtractMethodPanel extends JPanel {
             @Override
             public void onSuccess() {
                 if (sourceMethod != null) {
-                    Set<FirStatement> statements = slice.getSliceStatements();
+                    List<FirStatement> statements = slice.getSliceStatements();
                     FirStatement firStatement = statements.iterator().next();
                     // TODO isValid check
                     if (firStatement == null) {

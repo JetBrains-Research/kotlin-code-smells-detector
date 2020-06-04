@@ -75,7 +75,7 @@ class BasicBlockCFG {
         reachableBlocks.add(basicBlock);
         CFGNode<?> lastNode = basicBlock.getLastNode();
         for (CFGNode<?> dstNode : lastNode.getFollowingNodes()) {
-            // TODO check if condition is correct, we not what loop back here
+            // TODO check if condition is correct, we not want loop back here
             if (!(dstNode instanceof LoopBlockEnterNode) && !(FirUtilsKt.isEnterOrExitNode(dstNode))) {
                 BasicBlock dstBasicBlock = nodeToBlock.get(dstNode);
                 reachableBlocks.add(dstBasicBlock);

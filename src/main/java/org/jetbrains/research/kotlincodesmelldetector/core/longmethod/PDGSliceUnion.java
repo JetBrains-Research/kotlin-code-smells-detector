@@ -13,7 +13,6 @@ public class PDGSliceUnion {
     private final List<CFGNode<?>> sliceNodes;
     private final FirSimpleFunction function;
     private final FirVariable<?> localVariableCriterion;
-    private final Set<Map.Entry<CFGNode<?>, CFGNode<?>>> specialEdges;
     private final BasicBlock boundaryBlock;
     private final BasicBlockCFG basicBlockCFG;
     private Set<CFGNode<?>> specialNodes;
@@ -25,52 +24,12 @@ public class PDGSliceUnion {
         this.basicBlockCFG = basicBlockCFG;
         this.sliceNodes = new ArrayList<>();
         this.localVariableCriterion = localVariableCriterion;
-        this.specialEdges = calculateSpecialEdges();
         this.boundaryBlock = basicBlock;
         this.specialNodes = blockBasedRegion(boundaryBlock);
         for (PDGNode nodeCriterion : nodeCriteria) {
             sliceNodes.addAll(computeSlice(nodeCriterion).stream().map(PDGNode::getCfgNode).collect(Collectors.toList()));
         }
 
-    }
-
-    private Set<Map.Entry<CFGNode<?>, CFGNode<?>>> calculateSpecialEdges() {
-        //specialNodes = blockBasedRegion(boundaryBlock);
-//
-//        for (CFGNode<?> nodeSrc : cfg.getNodes()) {
-//            for (CFGNode<?> nodeDst : nodeSrc.getFollowingNodes()) {
-//                if (specialNodes.contains(nodeSrc) && specialNodes.contains(nodeDst)) {
-//                    if (nodeSrc.getIncomingEdges().get(nodeDst) == EdgeKind.Dfg) {
-//                        // TODO
-//                        if (nodeDst instanceof LoopEnterNode) {
-//                           // CFGNode<?> loopNode = ((LoopEnterNode)nodeDst).getFir();
-//                            // TODO
-//                            if (specialNodes.contains(nodeDst))
-//                                specialEdges.add(Map.entry(nodeSrc, nodeDst));
-//                        } else
-//                            specialEdges.add(Map.entry(nodeSrc, nodeDst));
-//                    } else if (dependence instanceof PDGAntiDependence) {
-//                        PDGAntiDependence antiDependence = (PDGAntiDependence) dependence;
-//                        if (antiDependence.isLoopCarried()) {
-//                            PDGNode loopNode = antiDependence.getLoop().getPDGNode();
-//                            if (nodes.contains(loopNode))
-//                                edges.add(antiDependence);
-//                        } else
-//                            edges.add(antiDependence);
-//                    } else if (dependence instanceof PDGOutputDependence) {
-//                        PDGOutputDependence outputDependence = (PDGOutputDependence) dependence;
-//                        if (outputDependence.isLoopCarried()) {
-//                            PDGNode loopNode = outputDependence.getLoop().getPDGNode();
-//                            if (nodes.contains(loopNode))
-//                                edges.add(outputDependence);
-//                        } else
-//                            edges.add(outputDependence);
-//                    } else
-//                        edges.add(dependence);
-               // }
-//            }
-//        }
-        return new HashSet<>();
     }
 
     Set<CFGNode<?>> blockBasedRegion(BasicBlock block) {
@@ -103,19 +62,6 @@ public class PDGSliceUnion {
         }
         return sliceNodes;
     }
-
-    //    private Set<CFGNode<?>> traverseBackward(CFGNode<?> node, Set<CFGNode<?>> visitedNodes) {
-    //        Set<CFGNode<?>> sliceNodes = new LinkedHashSet<>();
-    //        sliceNodes.add(node);
-    //        visitedNodes.add(node);
-    //        for (CFGNode<?> previousNode : node.getPreviousNodes()) {
-    //            if (!visitedNodes.contains(previousNode) && !FirUtilsKt.isExitNode(node)) {
-    //                sliceNodes.addAll(traverseBackward(previousNode, visitedNodes));
-    //            }
-    //
-    //        }
-    //        return sliceNodes;
-    //    }
 
     public List<CFGNode<?>> getSliceNodes() {
         return sliceNodes;

@@ -10,7 +10,7 @@ import org.jetbrains.research.kotlincodesmelldetector.utils.getVariableDeclarati
 class ASTSlice(sliceUnion: PDGSliceUnion, val project : Project) {
     val sourceMethodDeclaration: FirSimpleFunction = sliceUnion.function
     val sliceNodes: List<CFGNode<*>> = sliceUnion.sliceNodes
-    val sliceStatements: MutableSet<FirStatement> = LinkedHashSet()
+    val sliceStatements: MutableList<FirStatement> = mutableListOf()
     var localVariableCriterion: FirVariable<*>? = null
     init {
         for (node in sliceNodes) {

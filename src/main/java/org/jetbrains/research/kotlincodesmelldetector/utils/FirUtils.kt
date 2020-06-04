@@ -7,21 +7,24 @@ import org.jetbrains.kotlin.fir.analysis.cfa.TraverseDirection
 import org.jetbrains.kotlin.fir.analysis.cfa.traverse
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.expressions.FirStatement
+import org.jetbrains.kotlin.fir.expressions.FirVariableAssignment
 import org.jetbrains.kotlin.fir.java.FirProjectSessionProvider
 import org.jetbrains.kotlin.fir.psi
-import org.jetbrains.kotlin.fir.resolve.dfa.FirControlFlowGraphReferenceImpl
+import org.jetbrains.kotlin.fir.references.FirNamedReference
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.*
-import org.jetbrains.kotlin.fir.resolve.dfa.isNotEmpty
-import org.jetbrains.kotlin.fir.resolve.dfa.stackOf
+import org.jetbrains.kotlin.fir.visitors.FirVisitorVoid
 import org.jetbrains.kotlin.idea.fir.FirModuleResolveStateImpl
 import org.jetbrains.kotlin.idea.fir.getOrBuildFir
 
 fun extractFirSimpleFunctions(firFile: FirFile): List<FirSimpleFunction> {
     val result = mutableListOf<FirSimpleFunction>()
-    result.addAll(firFile.declarations.filterIsInstance<FirSimpleFunction>())
-    // TODO other types of classes
-    result.addAll(firFile.declarations.filterIsInstance<FirRegularClass>().flatMap {
-        it.declarations.filterIsInstance<FirSimpleFunction>()
+    firFile.acceptChildren(object : FirVisitorVoid() {
+        override fun visitElement(element: FirElement) {
+            if (element is FirSimpleFunction) {
+                result.add(element)
+            }
+            element.acceptChildren(this)
+        }
     })
     return result
 }
@@ -33,45 +36,28 @@ fun getCurrentFirFileOpenInEditor(project: Project): FirFile {
 }
 
 /**
- * Returns variables inside as well as function parameters
- */
-fun getVariableDeclarationsAndParameters(firSimpleFunction: FirSimpleFunction, cfg: ControlFlowGraph): List<FirVariable<*>> {
-    val result = mutableListOf<FirVariable<*>>()
-    result.addAll(firSimpleFunction.valueParameters)
-    // TODO better way to find all vars and vals
-    result.addAll(cfg.nodes.map { it.fir }.filterIsInstance<FirVariable<*>>().filter { !it.name.isSpecial })
-    return result
-}
-
-/**
- * Returns variables inside as well as function parameters
+ * Returns variables inside function as well as function parameters
  */
 fun FirSimpleFunction.getVariableDeclarationsAndParameters() : List<FirVariable<*>> {
-    if (this.controlFlowGraphReference !is FirControlFlowGraphReferenceImpl) {
-        return emptyList()
-    }
-    val cfg = (this.controlFlowGraphReference as FirControlFlowGraphReferenceImpl).controlFlowGraph
-    return getVariableDeclarationsAndParameters(this, cfg)
+    val result = mutableListOf<FirVariable<*>>()
+    result.addAll(valueParameters)
+    result.addAll(getVariableDeclarations())
+    return result
 }
 
 /**
  * Returns variables declarations inside function
  */
 fun FirSimpleFunction.getVariableDeclarations() : List<FirVariable<*>> {
-    if (this.controlFlowGraphReference !is FirControlFlowGraphReferenceImpl) {
-        return emptyList()
-    }
-    val cfg = (this.controlFlowGraphReference as FirControlFlowGraphReferenceImpl).controlFlowGraph
-    return getVariableDeclarations(this, cfg)
-}
-
-/**
- * Returns variables declarations inside function
- */
-fun getVariableDeclarations(firSimpleFunction: FirSimpleFunction, cfg: ControlFlowGraph): List<FirVariable<*>> {
     val result = mutableListOf<FirVariable<*>>()
-    // TODO better way to find all vars and vals
-    result.addAll(cfg.nodes.map { it.fir }.filterIsInstance<FirVariable<*>>().filter { !it.name.isSpecial })
+    this.acceptChildren(object : FirVisitorVoid() {
+        override fun visitElement(element: FirElement) {
+            if (element is FirVariable<*> && !element.name.isSpecial) {
+                result.add(element)
+            }
+            element.acceptChildren(this)
+        }
+    })
     return result
 }
 
@@ -111,21 +97,54 @@ fun ControlFlowGraph.getTraversedNodes(): MutableList<CFGNode<*>> {
     return nodes
 }
 
-fun ControlFlowGraph.getDfgEdges() {
-    val node = this.enterNode
-    val visitedNodes = mutableSetOf<CFGNode<*>>()
-    val stack = stackOf(node)
-    println("here")
-    while (stack.isNotEmpty) {
-        val curr = stack.pop()
-        visitedNodes.add(curr)
-        for (n in curr.followingNodes) {
-            if (n !in visitedNodes) {
-                stack.push(n)
+// TODO make different from declares
+fun usesLocalVariable(firElement: FirElement, firVariable: FirVariable<*>): Boolean {
+    var usesLocalVariable = false
+    firElement.acceptChildren(object : FirVisitorVoid() {
+        override fun visitElement(element: FirElement) {
+            if (firElement is FirProperty) {
+                if (firElement == firVariable) {
+                    usesLocalVariable = true
+                }
             }
-            if (curr.outgoingEdges[n] == EdgeKind.Dfg || curr.outgoingEdges[n] == EdgeKind.Cfg) {
-                println("$curr $n\n")
+            element.acceptChildren(this)
+        }
+    })
+    return usesLocalVariable
+}
+
+fun declaresLocalVariable(firElement: FirElement, firVariable: FirVariable<*>): Boolean {
+    var declaresLocalVariable = false
+    firElement.acceptChildren(object : FirVisitorVoid() {
+        override fun visitElement(element: FirElement) {
+            if (firElement is FirProperty) {
+                if (firElement == firVariable) {
+                    declaresLocalVariable = true
+                }
+            }
+            element.acceptChildren(this)
+        }
+    })
+    return declaresLocalVariable
+}
+
+fun definesLocalVariable(firElement: FirElement, firVariable: FirVariable<*>): Boolean {
+    var definesLocalVariable = false
+    firElement.acceptChildren(object : FirVisitorVoid() {
+        override fun visitElement(element: FirElement) {
+            if (firElement is FirProperty) {
+                if (firElement == firVariable) {
+                    definesLocalVariable = true
+                }
+            } else if (firElement is FirVariableAssignment) {
+                if (firElement.lValue is FirNamedReference) {
+                    if ((firElement.lValue as FirNamedReference).name == firVariable.name) {
+                        definesLocalVariable = true
+                    }
+                }
+                element.acceptChildren(this)
             }
         }
-    }
+    })
+    return definesLocalVariable
 }

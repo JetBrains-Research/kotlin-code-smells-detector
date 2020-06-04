@@ -16,6 +16,11 @@ plugins {
     id 'org.jetbrains.intellij' version '0.4.18'
 }
 
+dependencies {
+    // No idea why tests do not work without it
+    testCompile group: 'org.jetbrains.kotlinx', name: 'kotlinx-collections-immutable-jvm', version: '0.3.1'
+}
+
 repositories {
     maven { url "https://teamcity.jetbrains.com/guestAuth/app/rest/builds/buildType:(id:Kotlin_KotlinPublic_Compiler),number:${gradle.ext.kotlin_version},branch:(default:any)/artifacts/content/maven" }
     mavenCentral()
