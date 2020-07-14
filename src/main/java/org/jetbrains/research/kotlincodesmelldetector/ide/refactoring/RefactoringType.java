@@ -13,8 +13,8 @@ abstract public class RefactoringType {
 
     public abstract boolean instanceOfCandidateRefactoring(Object o);
 
-    public List<AbstractCandidateRefactoringGroup> getRefactoringOpportunities(ProjectInfo projectInfo, ProgressIndicator indicator) {
-        Set<?> notAbstractRefactoringOpportunities = getNotAbstractRefactoringOpportunities(projectInfo, indicator);
+    public List<AbstractCandidateRefactoringGroup> getRefactoringOpportunities(ProjectInfo projectInfo, ProgressIndicator indicator, long[] time) {
+        Set<?> notAbstractRefactoringOpportunities = getNotAbstractRefactoringOpportunities(projectInfo, indicator, time);
         if (notAbstractRefactoringOpportunities == null) {
             return null;
         }
@@ -27,7 +27,7 @@ abstract public class RefactoringType {
         return result;
     }
 
-    public abstract Set<?> getNotAbstractRefactoringOpportunities(ProjectInfo projectInfo, ProgressIndicator indicator);
+    public abstract Set<?> getNotAbstractRefactoringOpportunities(ProjectInfo projectInfo, ProgressIndicator indicator, long[] time);
 
     public abstract AbstractRefactoring newAbstractRefactoring(AbstractCandidateRefactoring candidateRefactoring);
 

@@ -75,6 +75,8 @@ public abstract class AbstractRefactoringPanel extends JPanel {
 
     protected final Project project;
 
+    private JLabel timeLabel = new JLabel();
+
     private AnalysisScope getScope() {
         return scopeChooserComboBox.getScope();
     }
@@ -91,6 +93,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
         this.treeTable = new TreeTable(model);
         this.refactorDepth = refactorDepth;
         this.doRefactorButton = new ActionButton(refactorAction(), new Presentation(KotlinCodeSmellDetectorBundle.message("refactor.button")), BorderLayout.EAST, new Dimension(26, 24));
+        doRefactorButton.setEnabled(true);
         this.refreshButton = new ActionButton(refreshAction(), new Presentation(KotlinCodeSmellDetectorBundle.message("refresh.button")), BorderLayout.EAST, new Dimension(26, 24));
         this.exportButton = new ActionButton(exportAction(), new Presentation(KotlinCodeSmellDetectorBundle.message("export")), BorderLayout.EAST, new Dimension(26, 24));
         this.scopeChooserComboBox = new ScopeChooserComboBox(new AnalysisScope(project));
@@ -143,11 +146,32 @@ public abstract class AbstractRefactoringPanel extends JPanel {
     /**
      * Shows treeTable with available refactorings.
      */
-    private void showRefactoringsTable() {
+    private void showRefactoringsTable(long time, long timeCluster) {
         removeSelection();
         scrollPane.setVisible(true);
         model.reload();
         scrollPane.setViewportView(treeTable);
+
+
+        long seconds = ((long) (time / 1000));
+        long milliseconds = time % 1000;
+        String melko = String.valueOf(milliseconds);
+        if (milliseconds < 10) {
+            melko += "00";
+        } else if (milliseconds < 100) {
+            melko += "0";
+        }
+
+        long seconds2 = ((long) (timeCluster / 1000));
+        long milliseconds2 = timeCluster % 1000;
+        String melko2 = String.valueOf(milliseconds2);
+        if (milliseconds2 < 10) {
+            melko2 += "00";
+        } else if (milliseconds2 < 100) {
+            melko2 += "0";
+        }
+
+        timeLabel.setText(seconds + "." + melko + ", " + seconds2 + "." + melko2);
     }
 
     /**
@@ -207,6 +231,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
         JPanel buttonsPanel = new JPanel(new BorderLayout());
         buttonsPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
         buttonsPanel.add(scopeChooserComboBox);
+        buttonsPanel.add(timeLabel);
         buttonsPanel.add(toolbar.getComponent());
         return buttonsPanel;
     }
@@ -237,7 +262,8 @@ public abstract class AbstractRefactoringPanel extends JPanel {
                 isAnySuggestionSelected = true;
             }
         }
-        doRefactorButton.setEnabled(isAnySuggestionSelected);
+        //doRefactorButton.setEnabled(isAnySuggestionSelected);
+        doRefactorButton.setEnabled(true);
     }
 
     /**
@@ -263,14 +289,21 @@ public abstract class AbstractRefactoringPanel extends JPanel {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 ApplicationManager.getApplication().runReadAction(() -> {
+                    long[] currentTime = new long[2];
+
                     List<RefactoringType.AbstractCandidateRefactoringGroup> candidates =
-                            refactoringType.getRefactoringOpportunities(projectInfo, indicator);
+                            refactoringType.getRefactoringOpportunities(projectInfo, indicator, currentTime);
+
                     if (candidates == null) {
                         showCompilationErrorNotification(getProject());
                         candidates = new ArrayList<>();
                     }
+
+                    long time1 = currentTime[0];
+                    long time2 = currentTime[1];
+
                     model.setCandidateRefactoringGroups(candidates);
-                    ApplicationManager.getApplication().invokeLater(() -> showRefactoringsTable());
+                    ApplicationManager.getApplication().invokeLater(() -> showRefactoringsTable(time1, time2));
                 });
             }
 
@@ -402,7 +435,7 @@ public abstract class AbstractRefactoringPanel extends JPanel {
             public void actionPerformed(@NotNull AnActionEvent e) { refactorSelected(); }
 
             @Override
-            public void update(@NotNull AnActionEvent e) { e.getPresentation().setEnabled(false); }
+            public void update(@NotNull AnActionEvent e) { e.getPresentation().setEnabled(true); }
         };
     }
     private AnAction refreshAction() {

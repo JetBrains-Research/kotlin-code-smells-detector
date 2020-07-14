@@ -15,9 +15,16 @@ import static org.jetbrains.research.kotlincodesmelldetector.utils.ExtractUtilsK
 import static org.jetbrains.research.kotlincodesmelldetector.utils.ExtractUtilsKt.getCurrentFileOpenInEditor;
 
 public class KotlinCodeSmellFacade {
-    public static TreeSet<ExtractClassCandidateGroup> getExtractClassRefactoringOpportunities(ProjectInfo project, ProgressIndicator indicator) {
+    public static TreeSet<ExtractClassCandidateGroup> getExtractClassRefactoringOpportunities(ProjectInfo project, ProgressIndicator indicator, long[] time) {
+        long started = System.currentTimeMillis();
+
         List<SmartPsiElementPointer<KtElement>> classes = GodClassFilterKt.filterGodClasses(project.getClasses());
-        List<ExtractClassCandidateRefactoring> extractClassCandidateList = new ArrayList<>(GodClassDistanceMatrixKt.getExtractClassCandidateRefactorings(project, classes, indicator));
+
+        time[0] += System.currentTimeMillis() - started;
+
+        List<ExtractClassCandidateRefactoring> extractClassCandidateList = new ArrayList<>(GodClassDistanceMatrixKt.getExtractClassCandidateRefactorings(project, classes, indicator, time));
+
+        started = System.currentTimeMillis();
 
         HashMap<SmartPsiElementPointer<KtElement>, ExtractClassCandidateGroup> groupedBySourceClassMap = new HashMap<>();
         for (ExtractClassCandidateRefactoring candidate : extractClassCandidateList) {
@@ -33,6 +40,8 @@ public class KotlinCodeSmellFacade {
         for (SmartPsiElementPointer<KtElement> sourceClass : groupedBySourceClassMap.keySet()) {
             groupedBySourceClassMap.get(sourceClass).groupConcepts();
         }
+
+        time[0] += System.currentTimeMillis() - started;
 
         return new TreeSet<>(groupedBySourceClassMap.values());
     }

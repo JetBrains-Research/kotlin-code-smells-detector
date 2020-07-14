@@ -189,12 +189,15 @@ fun generateFullEntitySets(entities: List<KtElement>): Map<KtElement, Set<PsiEle
                     } else if (psiElement is KtReferenceExpression) {
                         val resolved = psiElement.resolveToElement
 
-                        if (resolved !is KtElement || !resolved.isField || resolved.containingKtFile != entity.containingKtFile) { //TODO not just file
+                        if (resolved !is KtElement || !resolved.isField) {
                             return@check
                         }
 
                         result[entity]?.add(resolved)
-                        result[resolved]?.add(entity)
+
+                        if (resolved.containingKtFile == entity.containingKtFile) { //TODO not just file
+                            result[resolved]?.add(entity)
+                        }
                     }
                 }
 
@@ -265,6 +268,31 @@ fun usedThroughThisReference(ktExpression: KtExpression): Boolean {
             } else {
                 true
             }
+        }
+    }
+}
+
+fun pseudoUsedThroughThisReference(ktExpression: KtExpression): Boolean {
+    //TODO test
+    val resolvedElement = ktExpression.resolveToElement
+
+    return when {
+        resolvedElement !is KtFunction && resolvedElement !is KtProperty && resolvedElement !is KtParameter -> {
+            false
+        }
+
+        resolvedElement is KtFunction && resolvedElement.isLocal
+            || resolvedElement is KtProperty && resolvedElement.isLocal
+            || resolvedElement is KtParameter && !resolvedElement.hasValOrVar() -> {
+            false
+        }
+
+        resolvedElement !is KtElement || resolvedElement.classContext != ktExpression.classContext -> {
+            false
+        }
+
+        else -> {
+            true
         }
     }
 }

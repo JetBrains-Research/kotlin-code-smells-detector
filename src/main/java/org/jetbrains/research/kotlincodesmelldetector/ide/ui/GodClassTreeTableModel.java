@@ -1,5 +1,6 @@
 package org.jetbrains.research.kotlincodesmelldetector.ide.ui;
 
+import org.jetbrains.kotlin.psi.KtElement;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ExtractClassCandidateGroup;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ExtractClassCandidateRefactoring;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.ExtractedConcept;
@@ -7,12 +8,16 @@ import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.Refactorin
 import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.extractClass.ExtractClassRefactoringType;
 import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.extractClass.ExtractClassRefactoringType.AbstractExtractClassCandidateRefactoring;
 import org.jetbrains.research.kotlincodesmelldetector.ide.refactoring.extractClass.ExtractClassRefactoringType.AbstractExtractClassCandidateRefactoringGroup;
+import org.jetbrains.research.kotlincodesmelldetector.utils.KtUtilsKt;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class GodClassTreeTableModel extends AbstractTreeTableModel {
-    private boolean debugMode = false;
+    private boolean debugMode = true;
+
+    private int numberOfGroups;
+    private int numberOfClasses;
 
     public GodClassTreeTableModel(List<AbstractCandidateRefactoringGroup> candidateRefactoringGroups, String[] columnNames) {
         super(candidateRefactoringGroups, columnNames, new ExtractClassRefactoringType());
@@ -31,13 +36,14 @@ public class GodClassTreeTableModel extends AbstractTreeTableModel {
             ExtractClassCandidateGroup group = (ExtractClassCandidateGroup) abstractExtractClassCandidateRefactoringGroup.getCandidateRefactoringGroup();
 
             if (index == 0) {
-                return group.getSource().getElement().getName();
+                return group.getSource().getElement().getName() + " || " + numberOfGroups + " \\ " + numberOfClasses;
             } else {
                 return "";
             }
         } else if (o instanceof AbstractExtractClassCandidateRefactoring) {
             AbstractExtractClassCandidateRefactoring abstractCandidateRefactoring = (AbstractExtractClassCandidateRefactoring) o;
             ExtractClassCandidateRefactoring candidateRefactoring = (ExtractClassCandidateRefactoring) abstractCandidateRefactoring.getCandidateRefactoring();
+
             switch (index) {
                 case 0:
                     return "";
@@ -45,17 +51,25 @@ public class GodClassTreeTableModel extends AbstractTreeTableModel {
                     if (!debugMode) {
                         return candidateRefactoring.getSourceEntity().getElement().getName();
                     } else {
-                        return candidateRefactoring.getSourceEntity().getElement().getName()
-                                + "___"
-                                + (candidateRefactoring.isApplicable() ? "OK" : "NO")
-                                + "___"
-                                + (candidateRefactoring.getDistinctSourceDependencies() + "   " + candidateRefactoring.getDistinctTargetDependencies())
-                                + "___"
-                                + (candidateRefactoring.getDistinctSourceDependencies() <= 2 &&
-                                candidateRefactoring.getDistinctSourceDependencies() < candidateRefactoring.getDistinctTargetDependencies());
+                        return ""
+                                + candidateRefactoring.getDistinctSourceDependencies()
+                                + " \\ "
+                                + candidateRefactoring.getDistinctTargetDependencies()
+                                + " || "
+                                + candidateRefactoring.getPseudoDistinctSourceDependencies()
+                                + " \\ "
+                                + candidateRefactoring.getPseudoDistinctTargetDependencies();
                     }
                 case 2:
-                    return candidateRefactoring.getExtractedFields().size() + "/" + candidateRefactoring.getExtractedMethods().size();
+                    KtElement element = candidateRefactoring.getSourceClass().getElement();
+                    return
+                            candidateRefactoring.getExtractedFields().size()
+                                    + " : "
+                                    + KtUtilsKt.getFields(element).size()
+                                    + " || "
+                                    + candidateRefactoring.getExtractedMethods().size()
+                                    + " : "
+                                    + KtUtilsKt.getMethods(element).size();
             }
         }
 
@@ -73,7 +87,15 @@ public class GodClassTreeTableModel extends AbstractTreeTableModel {
             ExtractedConceptAndChildren concept = (ExtractedConceptAndChildren) parent;
             return concept.children;
         } else {
-            return super.getChildren(parent);
+            List<?> result = super.getChildren(parent);
+
+            numberOfGroups = result.size();
+            numberOfClasses = 0;
+            for (Object group : result) {
+                numberOfClasses += ((AbstractCandidateRefactoringGroup) group).getCandidates().size();
+            }
+
+            return result;
         }
     }
 
@@ -89,7 +111,7 @@ public class GodClassTreeTableModel extends AbstractTreeTableModel {
         }
     }
 
-    private static class ExtractedConceptAndChildren {
+    private class ExtractedConceptAndChildren {
         private final ExtractedConcept extractedConcept;
         private final List<AbstractExtractClassCandidateRefactoring> children;
 
@@ -104,7 +126,7 @@ public class GodClassTreeTableModel extends AbstractTreeTableModel {
 
         @Override
         public String toString() {
-            return extractedConcept.toString();
+            return extractedConcept.toString() + " || " + numberOfGroups + " \\ " + numberOfClasses;
         }
 
         @Override

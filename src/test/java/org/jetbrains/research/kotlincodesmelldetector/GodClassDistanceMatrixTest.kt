@@ -26,7 +26,7 @@ internal class GodClassDistanceMatrixTest : LightJavaCodeInsightFixtureTestCase(
         val project = myFixture.project
         val projectInfo = ProjectInfo(AnalysisScope(project))
         val set: Set<ExtractClassCandidateGroup> =
-            KotlinCodeSmellFacade.getExtractClassRefactoringOpportunities(projectInfo, ProgressIndicatorBase())
+            KotlinCodeSmellFacade.getExtractClassRefactoringOpportunities(projectInfo, ProgressIndicatorBase(), longArrayOf(0, 0))
 
         return set.toList()
     }

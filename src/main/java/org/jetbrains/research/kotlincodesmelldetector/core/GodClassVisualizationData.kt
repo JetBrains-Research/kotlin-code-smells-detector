@@ -3,6 +3,7 @@ package org.jetbrains.research.kotlincodesmelldetector.core
 import com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtExpression
+import org.jetbrains.research.kotlincodesmelldetector.utils.pseudoUsedThroughThisReference
 import org.jetbrains.research.kotlincodesmelldetector.utils.referencesInBody
 import org.jetbrains.research.kotlincodesmelldetector.utils.resolveToElement
 import org.jetbrains.research.kotlincodesmelldetector.utils.usedThroughThisReference
@@ -45,6 +46,20 @@ class GodClassVisualizationData(
                             distinctTargetDependencies.add(resolved)
                         } else {
                             distinctSourceDependencies.add(resolved)
+                        }
+                    }
+                }
+
+                if (pseudoUsedThroughThisReference(ktExpression)) {
+                    val resolved = ktExpression.resolveToElement ?: continue
+
+                    if (resolved != function) {
+                        if (isInvocationToExtractedFunction(resolved, extractedMethods) ||
+                            isAccessToExtractedProperty(resolved, extractedFields)
+                        ) {
+                            pseudoDistinctTargetDependencies.add(resolved)
+                        } else {
+                            pseudoDistinctSourceDependencies.add(resolved)
                         }
                     }
                 }

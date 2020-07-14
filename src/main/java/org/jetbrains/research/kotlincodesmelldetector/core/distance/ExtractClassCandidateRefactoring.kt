@@ -203,6 +203,14 @@ class ExtractClassCandidateRefactoring(
         return visualizationData.distinctTargetDependencies
     }
 
+    fun getPseudoDistinctSourceDependencies(): Int {
+        return visualizationData.pseudoDistinctSourceDependencies
+    }
+
+    fun getPseudoDistinctTargetDependencies(): Int {
+        return visualizationData.pseudoDistinctTargetDependencies
+    }
+
     override fun getSourceEntity(): SmartPsiElementPointer<KtElement> {
         return sourceClass
     }

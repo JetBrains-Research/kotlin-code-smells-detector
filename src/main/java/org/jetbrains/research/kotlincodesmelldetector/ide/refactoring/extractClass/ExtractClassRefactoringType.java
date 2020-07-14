@@ -30,8 +30,8 @@ public class ExtractClassRefactoringType extends RefactoringType {
     }
 
     @Override
-    public Set<?> getNotAbstractRefactoringOpportunities(ProjectInfo projectInfo, ProgressIndicator indicator) {
-        return getExtractClassRefactoringOpportunities(projectInfo, indicator);
+    public Set<?> getNotAbstractRefactoringOpportunities(ProjectInfo projectInfo, ProgressIndicator indicator, long[] time) {
+        return getExtractClassRefactoringOpportunities(projectInfo, indicator, time);
     }
 
     @Override
