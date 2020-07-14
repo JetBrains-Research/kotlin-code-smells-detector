@@ -15,8 +15,8 @@ import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
 import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
-import org.jetbrains.kotlin.psi.psiUtil.forEachDescendantOfType
 import org.jetbrains.research.kotlincodesmelldetector.KotlinCodeSmellDetectorBundle
+import org.jetbrains.research.kotlincodesmelldetector.core.isFeatureEnvyCandidate
 import org.jetbrains.research.kotlincodesmelldetector.utils.getConstructorType
 import org.jetbrains.research.kotlincodesmelldetector.utils.getFirstTypeArgumentType
 import org.jetbrains.research.kotlincodesmelldetector.utils.isContainer
@@ -69,7 +69,7 @@ class DistanceMatrix(private val project: ProjectInfo, private val indicator: Pr
             val classEntitySet: MutableSet<KtNamedDeclaration> = mutableSetOf()
             for (method in classEntity.methodList) {
                 if (methodIsDelegate(method) == null && method !in entityMap) {
-                    entityMap[method] = processReferencesInMethodBody(method)
+                    processReferencesInMethodBody(method)?.let { entityMap[method] = it}
                 }
                 classEntitySet.add(method)
             }
@@ -84,9 +84,15 @@ class DistanceMatrix(private val project: ProjectInfo, private val indicator: Pr
         indicator.fraction = 1.0
     }
 
-    private fun processReferencesInMethodBody(method: KtNamedFunction): MutableSet<KtNamedDeclaration> {
+    private fun processReferencesInMethodBody(method: KtNamedFunction): MutableSet<KtNamedDeclaration>? {
+        val references = method.bodyExpression?.collectDescendantsOfType<KtNameReferenceExpression>() ?: return null
+        if (!isFeatureEnvyCandidate(method, references, classes)) {
+            return null
+        }
+
         val methodEntitySet = mutableSetOf<KtNamedDeclaration>()
-        method.bodyExpression?.forEachDescendantOfType<KtNameReferenceExpression> { reference ->
+
+        for (reference in references) {
             reference.mainReference.resolve()?.let { called ->
                 if (called is KtNamedDeclaration) {
                     val containingClass = called.containingClassOrObject
