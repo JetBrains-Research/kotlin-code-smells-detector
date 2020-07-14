@@ -6,6 +6,7 @@ import org.jetbrains.kotlin.psi.KtClass;
 import org.jetbrains.kotlin.psi.KtClassOrObject;
 import org.jetbrains.kotlin.psi.KtElement;
 import org.jetbrains.kotlin.psi.KtFile;
+import org.jetbrains.research.kotlincodesmelldetector.core.GodClassFilterKt;
 import org.jetbrains.research.kotlincodesmelldetector.core.distance.*;
 
 import java.util.*;
@@ -15,8 +16,7 @@ import static org.jetbrains.research.kotlincodesmelldetector.utils.ExtractUtilsK
 
 public class KotlinCodeSmellFacade {
     public static TreeSet<ExtractClassCandidateGroup> getExtractClassRefactoringOpportunities(ProjectInfo project, ProgressIndicator indicator) {
-        List<SmartPsiElementPointer<KtElement>> classes = project.getClasses();
-
+        List<SmartPsiElementPointer<KtElement>> classes = GodClassFilterKt.filterGodClasses(project.getClasses());
         List<ExtractClassCandidateRefactoring> extractClassCandidateList = new ArrayList<>(GodClassDistanceMatrixKt.getExtractClassCandidateRefactorings(project, classes, indicator));
 
         HashMap<SmartPsiElementPointer<KtElement>, ExtractClassCandidateGroup> groupedBySourceClassMap = new HashMap<>();

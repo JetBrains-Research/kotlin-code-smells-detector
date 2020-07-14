@@ -1,9 +1,16 @@
 package org.jetbrains.research.kotlincodesmelldetector.utils
 
+import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiElementVisitor
+import com.intellij.psi.PsiWhiteSpace
 import com.intellij.psi.SmartPointerManager
 import com.intellij.psi.SmartPsiElementPointer
+import com.intellij.psi.util.PsiTreeUtil
+import org.jetbrains.kotlin.descriptors.impl.referencedProperty
+import org.jetbrains.kotlin.idea.caches.resolve.analyze
+import org.jetbrains.kotlin.idea.caches.resolve.resolveToDescriptorIfAny
+import org.jetbrains.kotlin.idea.core.util.getLineCount
 import org.jetbrains.kotlin.idea.refactoring.fqName.fqName
 import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.name.FqName
@@ -26,6 +33,7 @@ import org.jetbrains.kotlin.psi.KtReferenceExpression
 import org.jetbrains.kotlin.psi.KtSecondaryConstructor
 import org.jetbrains.kotlin.psi.KtThisExpression
 import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
+import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 
 /**
@@ -85,7 +93,8 @@ val KtElement?.fields: List<KtDeclaration>
  */
 val KtElement.isMethod: Boolean
     get() {
-        return this is KtFunction || this is KtProperty && !this.isField
+        return this is KtFunction && this !is KtPrimaryConstructor && this !is KtSecondaryConstructor
+            || this is KtProperty && !this.isField
     }
 
 /**
@@ -124,6 +133,23 @@ val KtElement.isField: Boolean
         return true
     }
 
+val KtElement.isPropertyStoringValue: Boolean
+    get() {
+        return when (this) {
+            is KtParameter -> {
+                hasValOrVar()
+            }
+
+            is KtProperty -> {
+                //TODO check
+                val descriptor = resolveToDescriptorIfAny()?.referencedProperty ?: return false
+                analyze().get(BindingContext.BACKING_FIELD_REQUIRED, descriptor) == true
+            }
+
+            else -> false
+        }
+    }
+
 val KtElement.isPropertyOrConstructorVar: Boolean
     get() {
         return this is KtProperty || this is KtParameter && this.isPropertyParameter()
@@ -143,19 +169,30 @@ fun generateFullEntitySets(entities: List<KtElement>): Map<KtElement, Set<PsiEle
     fun entityAccept(entity: KtElement, body: KtElement?) {
         body?.accept(object : PsiElementVisitor() {
             override fun visitElement(psiElement: PsiElement) {
-                if (psiElement is KtCallExpression) {
-                    val resolved = psiElement.resolveToElement
+                run check@{
+                    if (psiElement is KtCallExpression) {
+                        val resolved = psiElement.resolveToElement ?: return@check
 
-                    if (resolved !is KtClassOrObject && resolved !is KtPrimaryConstructor && resolved !is KtSecondaryConstructor) { //TODO review
-                        resolved?.let { result[entity]?.add(it) }
+                        if (resolved.project != entity.project) {
+                            return@check
+                        }
 
-                        if (resolved is KtPropertyAccessor && resolved.property.isField) {
+                        if (resolved is KtClassOrObject || resolved is KtPrimaryConstructor || resolved is KtSecondaryConstructor) { //TODO review
+                            return@check
+                        }
+
+                        result[entity]?.add(resolved)
+
+                        if (resolved is KtPropertyAccessor && resolved.property.isField && resolved.containingKtFile == entity.containingKtFile) { //TODo not just file
                             result[resolved]?.add(entity)
                         }
-                    }
-                } else if (psiElement is KtReferenceExpression) {
-                    val resolved = psiElement.resolveToElement
-                    if (resolved is KtElement && resolved.isField) {
+                    } else if (psiElement is KtReferenceExpression) {
+                        val resolved = psiElement.resolveToElement
+
+                        if (resolved !is KtElement || !resolved.isField || resolved.containingKtFile != entity.containingKtFile) { //TODO not just file
+                            return@check
+                        }
+
                         result[entity]?.add(resolved)
                         result[resolved]?.add(entity)
                     }
@@ -317,4 +354,13 @@ fun getConstructorType(declaration: KtNamedDeclaration): FqName? {
 
 fun getFirstTypeArgumentType(declaration: KtNamedDeclaration): FqName? {
     return declaration.type()?.arguments?.getOrNull(0)?.type?.constructor?.declarationDescriptor?.fqNameOrNull()
+}
+
+fun KtElement.linesOfCode(): Int {
+    var result = this.getLineCount()
+    for (skip in PsiTreeUtil.getChildrenOfAnyType(this, PsiWhiteSpace::class.java, PsiComment::class.java)) {
+        result -= skip.getLineCount()
+    }
+
+    return result
 }

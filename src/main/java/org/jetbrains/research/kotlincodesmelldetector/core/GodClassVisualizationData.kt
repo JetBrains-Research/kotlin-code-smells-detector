@@ -16,28 +16,49 @@ class GodClassVisualizationData(
 
     override val distinctSourceDependencies: Int
 
+    val pseudoDistinctTargetDependencies: Int
+
+    val pseudoDistinctSourceDependencies: Int
+
     init {
         val distinctTargetDependencies = mutableSetOf<PsiElement>()
         val distinctSourceDependencies = mutableSetOf<PsiElement>()
 
+        val pseudoDistinctTargetDependencies = mutableSetOf<PsiElement>()
+        val pseudoDistinctSourceDependencies = mutableSetOf<PsiElement>()
+
+        var pseudoDistinctTargetDependencies2 = 0
+        var pseudoDistinctSourceDependencies2 = 0
+
         for (function in extractedMethods) {
+            pseudoDistinctSourceDependencies.clear()
+            pseudoDistinctTargetDependencies.clear()
+
             for (ktExpression: KtExpression in function.referencesInBody) {
                 if (usedThroughThisReference(ktExpression)) {
                     val resolved = ktExpression.resolveToElement ?: continue
 
-                    if (isInvocationToExtractedFunction(resolved, extractedMethods) ||
-                        isAccessToExtractedProperty(resolved, extractedFields)
-                    ) {
-                        distinctTargetDependencies.add(resolved)
-                    } else {
-                        distinctSourceDependencies.add(resolved)
+                    if (resolved != function) {
+                        if (isInvocationToExtractedFunction(resolved, extractedMethods) ||
+                            isAccessToExtractedProperty(resolved, extractedFields)
+                        ) {
+                            distinctTargetDependencies.add(resolved)
+                        } else {
+                            distinctSourceDependencies.add(resolved)
+                        }
                     }
                 }
             }
+
+            pseudoDistinctSourceDependencies2 += pseudoDistinctSourceDependencies.size
+            pseudoDistinctTargetDependencies2 += pseudoDistinctTargetDependencies.size
         }
 
         this.distinctTargetDependencies = distinctTargetDependencies.size
         this.distinctSourceDependencies = distinctSourceDependencies.size
+
+        this.pseudoDistinctTargetDependencies = pseudoDistinctTargetDependencies2
+        this.pseudoDistinctSourceDependencies = pseudoDistinctSourceDependencies2
     }
 
     private fun isInvocationToExtractedFunction(
