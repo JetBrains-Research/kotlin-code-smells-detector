@@ -189,12 +189,15 @@ fun generateFullEntitySets(entities: List<KtElement>): Map<KtElement, Set<PsiEle
                     } else if (psiElement is KtReferenceExpression) {
                         val resolved = psiElement.resolveToElement
 
-                        if (resolved !is KtElement || !resolved.isField || resolved.containingKtFile != entity.containingKtFile) { //TODO not just file
+                        if (resolved !is KtElement || !resolved.isField) {
                             return@check
                         }
 
                         result[entity]?.add(resolved)
-                        result[resolved]?.add(entity)
+
+                        if (resolved.containingKtFile == entity.containingKtFile) { //TODO not just file
+                            result[resolved]?.add(entity)
+                        }
                     }
                 }
 
